@@ -142,7 +142,7 @@ elementclass Router {
 
 	rt[3]
 		-> DropBroadcasts
-		-> client2_paint :: PaintTee(2)
+		-> client2_paint :: PaintTee(3)
 		-> client2_ipgw :: IPGWOptions($client2_address)
 		-> FixIPSrc($client2_address)
 		-> client2_ttl :: DecIPTTL
@@ -165,4 +165,3 @@ elementclass Router {
 		-> ICMPError($client2_address, unreachable, needfrag)
 		-> rt;
 }
-

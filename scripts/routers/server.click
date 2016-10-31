@@ -1,4 +1,3 @@
-
 // Output configuration: 
 //
 // Packets for the network are put on output 0
