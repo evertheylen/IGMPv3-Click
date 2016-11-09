@@ -15,6 +15,9 @@
 elementclass Router {
 	$server_address, $client1_address, $client2_address |
 
+	// Important ARP / IP elements
+	// ===========================
+	
 	// Shared IP input path and routing table
 	ip :: Strip(14)
 		-> CheckIPHeader
@@ -24,12 +27,28 @@ elementclass Router {
 					$client2_address:ip/32 0,
 					$server_address:ipnet 1,
 					$client1_address:ipnet 2,
-					$client2_address:ipnet 3);
+					$client2_address:ipnet 3,
+					224.0.0.0/4 4,  // Class D (for multicast messages)
+					);
 	
 	// ARP responses are copied to each ARPQuerier and the host.
 	arpt :: Tee (3);
 	
-	// Input and output paths for interface 0
+	
+	// Important Multicast / IGMP elements
+	// ===================================
+	
+	mc_table :: MulticastTable;
+	igmp :: IGMP(mc_table) -> igmp_tee :: Tee(3)
+	mc :: Multicast(mc_table);
+	
+	rt[4] -> mc
+	
+	
+	// Input and output paths
+	// ======================
+	
+	// interface 0 (server)
 	input
 		-> HostEtherFilter($server_address)
 		-> server_class :: Classifier(12/0806 20/0001, 12/0806 20/0002, -)
@@ -45,9 +64,13 @@ elementclass Router {
 
 	server_class[2]
 		-> Paint(1)
-		-> ip;
-
-	// Input and output paths for interface 1
+		-> server_igmp_class::IPClassifier(ip proto igmp, -)
+		-> [0] igmp
+		
+	server_igmp_class[1] -> ip;
+	
+	
+	// interface 1 (client1)
 	input[1]
 		-> HostEtherFilter($client1_address)
 		-> client1_class :: Classifier(12/0806 20/0001, 12/0806 20/0002, -)
@@ -63,9 +86,13 @@ elementclass Router {
 
 	client1_class[2]
 		-> Paint(2)
-		-> ip;
-
-	// Input and output paths for interface 2
+		-> client1_igmp_class::IPClassifier(ip proto igmp, -)
+		-> [1] igmp
+		
+	client1_igmp_class[1] -> ip;
+	
+	
+	// interface 2 (client2)
 	input[2]
 		-> HostEtherFilter($client2_address)
 		-> client2_class :: Classifier(12/0806 20/0001, 12/0806 20/0002, -)
@@ -81,21 +108,37 @@ elementclass Router {
 
 	client2_class[2]
 		-> Paint(3)
-		-> ip;
+		-> client2_igmp_class::IPClassifier(ip proto igmp, -)
+		-> [2] igmp
+		
+	client2_igmp_class[1] -> ip;
+	
 	
 	// Local delivery
 	rt[0]
 		-> [3]output
+	mc[0]
+		-> [3]output
 	
 	// Forwarding paths per interface
+	// ==============================
+	
+	// interface 0 (server)
+	mc[1]
+		-> server_db :: DropBroadcasts
+	
 	rt[1]
-		-> DropBroadcasts
+		-> server_db
 		-> server_paint :: PaintTee(1)
 		-> server_ipgw :: IPGWOptions($server_address)
 		-> FixIPSrc($server_address)
 		-> server_ttl :: DecIPTTL
 		-> server_frag :: IPFragmenter(1500)
 		-> server_arpq;
+	
+	igmp_tee[0]
+		-> IPEncap(2, $server_address, DST DST_ANNO, TTL 1)
+		-> server_arpq
 	
 	server_paint[1]
 		-> ICMPError($server_address, redirect, host)
@@ -113,15 +156,23 @@ elementclass Router {
 		-> ICMPError($server_address, unreachable, needfrag)
 		-> rt;
 	
-
+	
+	// interface 1 (client1)
+	mc[2]
+		-> client1_db :: DropBroadcasts
+		
 	rt[2]
-		-> DropBroadcasts
+		-> client1_db
 		-> client1_paint :: PaintTee(2)
 		-> client1_ipgw :: IPGWOptions($client1_address)
 		-> FixIPSrc($client1_address)
 		-> client1_ttl :: DecIPTTL
 		-> client1_frag :: IPFragmenter(1500)
 		-> client1_arpq;
+	
+	igmp_tee[1]
+		-> IPEncap(2, $client1_address, DST DST_ANNO, TTL 1)
+		-> client1_arpq
 	
 	client1_paint[1]
 		-> ICMPError($client1_address, redirect, host)
@@ -138,16 +189,24 @@ elementclass Router {
 	client1_frag[1]
 		-> ICMPError($client1_address, unreachable, needfrag)
 		-> rt;
-
-
+	
+		
+	// interface 2 (client2)
+	mc[3]
+		-> client2_db :: DropBroadcasts
+	
 	rt[3]
-		-> DropBroadcasts
+		-> client2_db
 		-> client2_paint :: PaintTee(3)
 		-> client2_ipgw :: IPGWOptions($client2_address)
 		-> FixIPSrc($client2_address)
 		-> client2_ttl :: DecIPTTL
 		-> client2_frag :: IPFragmenter(1500)
 		-> client2_arpq;
+	
+	igmp_tee[2]
+		-> IPEncap(2, $client2_address, DST DST_ANNO, TTL 1)
+		-> server_arpq
 	
 	client2_paint[1]
 		-> ICMPError($client2_address, redirect, host)
