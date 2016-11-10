@@ -65,6 +65,7 @@ elementclass Router {
 	server_class[2]
 		-> Paint(1)
 		-> server_igmp_class::IPClassifier(ip proto igmp, -)
+		-> StripIPHeader
 		-> [0] igmp
 		
 	server_igmp_class[1] -> ip;
@@ -87,6 +88,7 @@ elementclass Router {
 	client1_class[2]
 		-> Paint(2)
 		-> client1_igmp_class::IPClassifier(ip proto igmp, -)
+		-> StripIPHeader
 		-> [1] igmp
 		
 	client1_igmp_class[1] -> ip;
@@ -109,6 +111,7 @@ elementclass Router {
 	client2_class[2]
 		-> Paint(3)
 		-> client2_igmp_class::IPClassifier(ip proto igmp, -)
+		-> StripIPHeader
 		-> [2] igmp
 		
 	client2_igmp_class[1] -> ip;

@@ -15,8 +15,19 @@ enum class RecordType: uint8_t {
 	CHANGE_TO_EXCLUDE_MODE = 4
 };
 
+const bool INCLUDE = true;
+const bool EXCLUDE = false;
+
 inline bool is_state_change(RecordType& r) {
 	return r == RecordType::CHANGE_TO_INCLUDE_MODE || r == RecordType::CHANGE_TO_EXCLUDE_MODE;
+}
+
+inline RecordType MODE_IS_(bool include) {
+	return include ? RecordType::MODE_IS_INCLUDE : RecordType::MODE_IS_EXCLUDE;
+}
+
+inline RecordType CHANGE_TO_(bool include) {
+	return include ? RecordType::CHANGE_TO_INCLUDE_MODE : RecordType::CHANGE_TO_EXCLUDE_MODE;
 }
 
 // beware of Endianness!

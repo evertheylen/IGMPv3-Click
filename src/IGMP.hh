@@ -4,6 +4,8 @@
 #include <click/element.hh>
 
 #include "MulticastTable.hh"
+#include "Query.hh"
+#include "Report.hh"
 
 CLICK_DECLS
 
@@ -22,13 +24,12 @@ public:
 	int configure(Vector<String>&, ErrorHandler*);
 	
 	void push(int, Packet*);
+	void got_report(int interface, Report* report, Packet* p);
+	void got_query(int interface, Query* query, Packet* p);
 	
 	// Host is always assumed to be port 0
-	void host_update(bool new_state);
+	void host_update(bool include, const String& s);
 	
-	//Packet* simple_action(Packet* p);
-	//Packet* pull(int);
-
 private:
 	MulticastTable* table;
 	

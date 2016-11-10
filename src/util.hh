@@ -6,6 +6,8 @@
 #include <clicknet/udp.h>
 #include <clicknet/ether.h>
 
+#include <stdexcept>
+
 class MiniFloat {
 public:
 	uint8_t value = 0;
@@ -31,3 +33,23 @@ WritablePacket* packet_name;\
 type * name;\
 create_packet<type>(name, packet_name);
 
+
+#define def_ntoh(len, type, func)\
+type ntoh_ ## len (type input) { return func(input); }\
+template<typename T> type ntoh_ ## len (T input) = delete;
+
+def_ntoh(16, uint16_t, ntohs)
+def_ntoh(32, uint32_t, ntohl)
+def_ntoh(64, uint64_t, ntohq)
+
+
+#define def_hton(len, type, func)\
+type hton_ ## len (type input) { return func(input); }\
+template<typename T> type hton_ ## len (T input) = delete;
+
+def_hton(16, uint16_t, htons)
+def_hton(32, uint32_t, htonl)
+def_hton(64, uint64_t, htonq)
+
+
+#include "util.cc"

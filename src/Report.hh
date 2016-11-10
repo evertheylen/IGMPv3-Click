@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <cstdint>
 
 #include <click/packet.hh>
@@ -23,4 +24,31 @@ struct GroupRecord {
 	IPAddress multicast_address;
 	// Source addresses go here
 	// Auxiliary data goes here
+	
+	inline int size() { return sizeof(GroupRecord) + (sizeof(IPAddress) * N) + aux_data_len; }
+	inline bool include() { 
+		return (type == RecordType::CHANGE_TO_INCLUDE_MODE) or (type == RecordType::MODE_IS_INCLUDE);
+	}
 };
+
+// report builder does NOT care about aux data
+class ReportBuilder {
+public:
+	ReportBuilder(uint16_t number_group_records, int tailroom = -1);
+	
+	GroupRecord* add_record(RecordType type, IPAddress multicast_address, std::initializer_list<IPAddress> sources, int extra_sources = 0);
+	
+	inline GroupRecord* add_record(RecordType type, IPAddress multicast_address, int extra_sources = 0) {
+		return add_record(type, multicast_address, {}, extra_sources);
+	}
+	
+	// TODO checksum
+	
+	Report* report;
+	WritablePacket* packet;
+	
+private:
+	unsigned char* ptr;
+};
+
+#include "Report.cc"

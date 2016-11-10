@@ -18,12 +18,9 @@ int Multicast::configure(Vector<String>& conf, ErrorHandler* errh) {
 void Multicast::push(int, Packet* p) {
 	bool pushed = false;
 	for (int i=0; i<num_interfaces; i++) {
-		if (table->get(i)) {
-// 			click_chatter("mc packet may pass to interface %d\n", i);
+		if (table->get(i, p->dst_ip_anno())) {
 			pushed = true;
 			output(i).push(p->clone());
-		} else {
-// 			click_chatter("mc packet cant pass to interface %d\n", i);
 		}
 	}
 	
