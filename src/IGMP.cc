@@ -31,11 +31,13 @@ void IGMP::push(int port, Packet* p) {
 
 void IGMP::got_report(int interface, Report* report, Packet* p) {
 	uint16_t N = ntoh_16(report->number_group_records);
+	click_chatter("got report with %d records\n", N);
 	
 	GroupRecord* record = (GroupRecord*) (p->data() + sizeof(Report));
 	for (int i=0; i<N; i++) {
+		click_chatter("report is of size %d\n", record->size());
 		table->set(interface, record->multicast_address, record->include());
-		record += record->size();
+		pointer_add(record, record->size());
 	}
 }
 
@@ -66,6 +68,7 @@ void IGMP::host_update(bool include, const String& s) {
 	ReportBuilder rb(1);
 	rb.add_record(CHANGE_TO_(include), group);
 	rb.packet->set_dst_ip_anno(REPORT_ADDRESS);
+	rb.set_checksum();
 	output(0).push(rb.packet);
 	
 	// set own table
@@ -78,14 +81,19 @@ void IGMP::add_handlers() {
 }
 
 int IGMP::join_group_handler(const String &s, Element* e, void*, ErrorHandler* errh) {
-	((IGMP*) e)->host_update(true, s);
+	((IGMP*) e)->host_update(EXCLUDE, s);
 	return 0;
 }
 
 int IGMP::leave_group_handler(const String &s, Element* e, void*, ErrorHandler* errh) {
-	((IGMP*) e)->host_update(false, s);
+	((IGMP*) e)->host_update(INCLUDE, s);
 	return 0;
 }
+
+// Well thanks click for not including my C++ files
+#include "util.cc"
+#include "Report.cc"
+#include "Query.cc"
 
 CLICK_ENDDECLS
 EXPORT_ELEMENT(IGMP)

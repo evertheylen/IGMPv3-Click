@@ -18,7 +18,7 @@ int Multicast::configure(Vector<String>& conf, ErrorHandler* errh) {
 void Multicast::push(int, Packet* p) {
 	bool pushed = false;
 	for (int i=0; i<num_interfaces; i++) {
-		if (table->get(i, p->dst_ip_anno())) {
+		if (table->get(i, p->dst_ip_anno()) == EXCLUDE) {
 			pushed = true;
 			output(i).push(p->clone());
 		}

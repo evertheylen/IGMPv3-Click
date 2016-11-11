@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <set>
 
+#include "constants.hh"
+
 CLICK_DECLS
 
 struct GroupState {
@@ -32,7 +34,7 @@ public:
 	const char *class_name() const	{ return "MulticastTable"; }
 	void add_handlers();
 	
-	static const bool default_value = false;
+	static const bool default_value = INCLUDE;
 	
 	bool get(int interface, IPAddress group);
 	void set(int interface, IPAddress group, bool include);

@@ -58,7 +58,7 @@ String MulticastTable::print_table() {
 	for (auto iit: table) {
 		s += String("--- Interface ") + String(iit.first) + " ---\n";
 		for (auto it: iit.second) {
-			s += IPAddress(it.first).unparse() + "\t" + String((uint32_t) it.first) + "\t" + String(it.second.include) + "\n";
+			s += IPAddress(it.first).unparse() + "\t" + String((uint32_t) it.first) + "\t" + (it.second.include? "INCLUDE" : "EXCLUDE") + "\n";
 		}
 		s += "\n";
 	}

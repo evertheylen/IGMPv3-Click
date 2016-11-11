@@ -42,13 +42,10 @@ public:
 		return add_record(type, multicast_address, {}, extra_sources);
 	}
 	
-	// TODO checksum
+	void set_checksum();
 	
-	Report* report;
+	inline Report* report() { return (Report*) packet->data(); }
+	
 	WritablePacket* packet;
-	
-private:
-	unsigned char* ptr;
 };
 
-#include "Report.cc"
