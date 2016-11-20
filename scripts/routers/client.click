@@ -5,14 +5,47 @@
 
 elementclass Client {
 	$address, $gateway |
-
+	
+	// IP lookup table
+	// ===============
+	
 	ip :: Strip(14)
 		-> CheckIPHeader()
 		-> rt :: StaticIPLookup(
+					224.0.0.0/4 2,  // Class D
 					$address:ip/32 0,
 					$address:ipnet 0,
-					0.0.0.0/0.0.0.0 $gateway 1)
+					0.0.0.0/0.0.0.0 $gateway 1,
+					)
 		-> [1]output;
+	
+	
+	// Multicast stuff
+	// ===============
+		
+	mc_table :: MulticastTable;
+	igmp :: IGMP(mc_table);
+	mc :: Multicast(mc_table);
+	igmp_class::IPClassifier(ip proto igmp, -);
+	
+	rt[2] 
+		-> igmp_class;
+	
+	igmp_class[0] // IGMP messages
+		-> DropBroadcasts // stops messages from the other client on the same subnet
+		-> StripIPHeader
+		-> igmp
+		-> IPEncap(2, $address, DST DST_ANNO, TTL 1)
+		-> IPPrint("Client igmp sent something")
+		-> arpq :: ARPQuerier($address)
+		-> output
+	
+	igmp_class[1] // All the rest (data)
+		-> mc
+		-> [1] output // mc has one port: this host
+	
+	// The rest of the IP stuff
+	// ========================
 	
 	rt[1]
 		-> DropBroadcasts
@@ -20,9 +53,8 @@ elementclass Client {
 		-> FixIPSrc($address)
 		-> ttl :: DecIPTTL
 		-> frag :: IPFragmenter(1500)
-		-> arpq :: ARPQuerier($address)
-		-> output;
-
+		-> arpq
+	
 	ipgw[1]
 		-> ICMPError($address, parameterproblem)
 		-> output;
@@ -34,8 +66,11 @@ elementclass Client {
 	frag[1]
 		-> ICMPError($address, unreachable, needfrag)
 		-> output;
-
-	// Incoming Packets
+	
+	
+	// Ethernet stuff
+	// ==============
+	
 	input
 		-> HostEtherFilter($address)
 		-> in_cl :: Classifier(12/0806 20/0001, 12/0806 20/0002, 12/0800)
