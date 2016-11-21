@@ -29,7 +29,8 @@ elementclass Client {
 	igmp_class::IPClassifier(ip proto igmp, -);
 	
 	rt[2] 
-		-> igmp_class;
+		-> mc
+		-> [1] output // mc has one port: this host
 	
 	igmp_class[0] // IGMP messages
 		-> DropBroadcasts // stops messages from the other client on the same subnet
@@ -41,8 +42,7 @@ elementclass Client {
 		-> output
 	
 	igmp_class[1] // All the rest (data)
-		-> mc
-		-> [1] output // mc has one port: this host
+		-> ip
 	
 	// The rest of the IP stuff
 	// ========================
@@ -81,5 +81,5 @@ elementclass Client {
 		-> [1]arpq;
 	
 	in_cl[2]
-		-> ip;
+		-> igmp_class;
 }
