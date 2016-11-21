@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <click/config.h>
@@ -7,12 +6,17 @@
 #include <clicknet/ether.h>
 
 #include <stdexcept>
+#include <cstdint>
+#include <cmath>
 
-class MiniFloat {
-public:
-	uint8_t value = 0;
+//4.1.7, p10
+struct MiniFloat {
+    void set(unsigned int i);  // exception if too big or negative (or assert)
+    unsigned int get();  // should always work
+    unsigned int get_int();  // works only if the byte is actually an int, otherwise an exception
+private:
+    uint8_t byte;
 };
-
 
 const int default_headroom = sizeof(click_ether) + sizeof(click_ip);
 
@@ -23,7 +27,7 @@ void create_packet(T*& content, WritablePacket*& p, int packetsize = sizeof(T), 
 		click_chatter("Can't make packet\n");
 		return;
 	}
-	
+
 	content = new (p->data()) T;
 }
 
