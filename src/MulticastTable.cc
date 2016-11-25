@@ -26,7 +26,9 @@ void MulticastTable::set(int interface, IPAddress group, bool include) {
 	auto it = table.find(interface);
 	if (it == table.end()) {
 		// 1 bucket minimum
-		it = table.emplace(interface, 1).first;
+		//it = table.emplace(interface, 1).first;  // works in clang...
+		table[interface] = SubTable();
+		it = table.find(interface);
 		click_chatter("emplacing %d\n", interface);
 	}
 	
