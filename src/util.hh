@@ -11,45 +11,22 @@
 
 //4.1.7, p10
 struct MiniFloat {
-    void set(unsigned int i);  // exception if too big or negative (or assert)
-    unsigned int get();  // should always work
-    unsigned int get_int();  // works only if the byte is actually an int, otherwise an exception
+	MiniFloat() = default;
+	MiniFloat(unsigned int i);
+	MiniFloat(const MiniFloat& other);
+	
+	void set(unsigned int i);  // exception if too big or negative (or assert)
+	unsigned int get();  // should always work
+	unsigned int get_int();  // works only if the byte is actually an int, otherwise an exception
+
 private:
-    uint8_t byte;
+	uint8_t byte;
 };
 
-//igmpv3 message format
-struct igmp_packet {
-    uint8_t	igmp_type;		/* 0-7     IGMP type, 	     */
-    uint8_t	igmp_max_resp_code;		/* 8-15     IGMP max resp code     */
-    uint16_t	igmp_cksum;		/* 16-31   checksum		     */
-    uint32_t	group_address;		/* 32-63  		     */
-    uint8_t	resv;		/* 64-67  TODO how represent 4 bits? 		     */
-    bool	S_flag;		/* 68  		     */
-    uint8_t	QRV;		/* 69-71  TODO how represent 3 bits?  		     */
-    uint8_t	QQIC;		/* 72-79   	     */
-    uint16_t	number_of_sources;	/* 80-95    should be zero		     */
-};
+using centiseconds = unsigned int;
+using seconds = unsigned int;
 
 const int default_headroom = sizeof(click_ether) + sizeof(click_ip);
-
-template <typename T>
-void create_packet(T*& content, WritablePacket*& p, int packetsize = sizeof(T), int headroom = default_headroom, int tailroom = 0) {
-	p = Packet::make(headroom, 0, packetsize, tailroom);
-	if (p == nullptr) {
-		click_chatter("Can't make packet\n");
-		return;
-	}
-
-	content = new (p->data()) T;
-}
-
-// slightly easier, would have been a lot easier if C++ had multiple return values
-#define simple_packet(type, name, packet_name) \
-WritablePacket* packet_name;\
-type * name;\
-create_packet<type>(name, packet_name);
-
 
 #define def_ntoh(len, type, func)\
 inline type ntoh_ ## len (type input) { return func(input); }\

@@ -1,4 +1,6 @@
 
+#include <clicknet/ip.h>
+
 #include "Report.hh"
 #include "util.hh"
 

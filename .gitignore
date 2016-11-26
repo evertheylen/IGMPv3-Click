@@ -1,6 +1,7 @@
 
 # Click dumps
 *.dump
+*.pcap
 
 
 # Created by https://www.gitignore.io/api/c++,kdevelop4,eclipse,c

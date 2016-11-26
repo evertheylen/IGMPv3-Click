@@ -26,22 +26,28 @@ elementclass Client {
 	mc_table :: MulticastTable;
 	igmp :: IGMP(mc_table);
 	mc :: Multicast(mc_table);
-	igmp_class::IPClassifier(ip proto igmp, -);
+	igmp_class::IPClassifier(
+		ip proto igmp and dst host 224.0.0.1,
+		ip proto igmp,
+		-);
 	
 	rt[2] 
 		-> mc
 		-> [1] output // mc has one port: this host
 	
-	igmp_class[0] // IGMP messages
+	igmp_class[1] // IGMP messages
 		-> DropBroadcasts // stops messages from the other client on the same subnet
-		-> StripIPHeader
+		-> strip_igmp::StripIPHeader
 		-> igmp
 		-> IPEncap(2, $address, DST DST_ANNO, TTL 1)
 		-> IPPrint("Client igmp sent something")
 		-> arpq :: ARPQuerier($address)
 		-> output
 	
-	igmp_class[1] // All the rest (data)
+	igmp_class[0] // IGMP messages (from 224.0.0.1) should skip the DropBroadcasts
+		-> strip_igmp
+	
+	igmp_class[2] // All the rest (data)
 		-> ip
 	
 	// The rest of the IP stuff

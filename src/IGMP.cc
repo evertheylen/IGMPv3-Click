@@ -36,14 +36,14 @@ void IGMP::got_report(int interface, Report* report, Packet* p) {
 
 	GroupRecord* record = (GroupRecord*) (p->data() + sizeof(Report));
 	for (int i=0; i<N; i++) {
-		click_chatter("report is of size %d\n", record->size());
+		click_chatter("record is of size %d\n", record->size());
 		table->set(interface, record->multicast_address, record->include());
 		pointer_add(record, record->size());
 	}
 }
 
 void IGMP::got_query(int interface, Query* query, Packet* p) {
-
+	click_chatter("got a query!");
 }
 
 
@@ -55,7 +55,7 @@ int IGMP::configure(Vector<String> &conf, ErrorHandler *errh) {
 		.read_mp("TABLE", ElementCastArg("MulticastTable"), table)
 		.consume() < 0)
 		return -1;
-
+	table->set_igmp(this);
 	return 0;
 }
 
@@ -91,27 +91,6 @@ int IGMP::leave_group_handler(const String &s, Element* e, void*, ErrorHandler* 
 	return 0;
 }
 
-//Membership query
-
-
-Packet * IGMP::make_membership_query() {
-		WritablePacket *q = Packet::make(sizeof(click_ip) + sizeof(struct igmp_packet);// + _data.length());
-		if (!q) {
-				return 0;
-		}
-		//TODO bij send pings gebeuren er hierna nog dingen, kijken wat wij nog moeten doen voor igmp
-		return q;
-}
-
-void IGMP::run_timer(Timer *) {
-	//loopt de timer automatisch door <click/timer.hh>? -->nakijken hoe het reageert
-    if (Packet *q = make_packet()) {
-	output(0).push(q);
-	_timer.reschedule_after_msec(_interval);
-	/*_count++;
-	if (_count < _limit || _limit < 0)
-}*/
-}
 
 
 // Well thanks click for not including my C++ files

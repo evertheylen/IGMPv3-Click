@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <map>
+
 #include <click/element.hh>
 
 #include "MulticastTable.hh"
@@ -17,7 +19,7 @@ CLICK_DECLS
 class IGMP: public Element {
 public:
 	const char *class_name() const	{ return "IGMP"; }
-	const char *port_count() const	{ return "-/1"; }
+	const char *port_count() const	{ return "1/1"; }
 	const char *processing() const	{ return PUSH; }
 	void add_handlers();
 
@@ -29,17 +31,16 @@ public:
 
 	// Host is always assumed to be port 0
 	void host_update(bool include, const String& s);
+	
+	inline centiseconds GMI() { return (robustness*query_interval)*10 + max_resp_time; }
 
-	//Membership query
-	Timer _timer;
-	uint32_t _interval;
-	void run_timer(Timer *);
-	Packet * IGMP::make_membership_query();
-
-
-private:
+protected:
 	MulticastTable* table;
-
+	
+	uint8_t robustness = defaults::ROBUSTNESS;
+	seconds query_interval = defaults::QUERY_INTERVAL;
+	centiseconds max_resp_time = defaults::MAX_RESP_TIME;
+	
 	static int join_group_handler(const String &s, Element* e, void*, ErrorHandler* errh);
 	static int leave_group_handler(const String &s, Element* e, void*, ErrorHandler* errh);
 };

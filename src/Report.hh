@@ -31,7 +31,7 @@ struct GroupRecord {
 	}
 };
 
-// report builder does NOT care about aux data
+// ReportBuilder does NOT care about aux data
 class ReportBuilder {
 public:
 	ReportBuilder(uint16_t number_group_records, int tailroom = -1);

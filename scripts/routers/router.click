@@ -39,7 +39,7 @@ elementclass Router {
 	// ===================================
 	
 	mc_table :: MulticastTable;
-	igmp :: IGMP(mc_table) -> igmp_tee :: Tee(3)
+	igmp :: IGMPRouter(mc_table) -> igmp_tee :: Tee(3)
 	mc :: Multicast(mc_table);
 	
 	rt[4] -> mc
@@ -56,7 +56,7 @@ elementclass Router {
 		-> output;
 
 	server_arpq :: ARPQuerier($server_address)
-		-> output;
+		-> [0]output;
 
 	server_class[1]
 		-> arpt
@@ -209,7 +209,7 @@ elementclass Router {
 	
 	igmp_tee[2]
 		-> IPEncap(2, $client2_address, DST DST_ANNO, TTL 1)
-		-> server_arpq
+		-> client2_arpq
 	
 	client2_paint[1]
 		-> ICMPError($client2_address, redirect, host)
