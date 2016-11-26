@@ -20,8 +20,8 @@ void MiniFloat::set(unsigned int qqi) {
         } else {
             unsigned int exp = 0;
             qqi >>= 3; //remove the +3 part from the exp from QQIC
-            while (qqi > 31){//the mantisse can represent numbers up to 31
-                exp += 1;
+            while (qqi > 31){
+                ++exp;
                 qqi >>= 1;
             }
             exp <<= 4; //adjust the exp so that it's bits are in pos 1 -> 3 (MSB = 0)

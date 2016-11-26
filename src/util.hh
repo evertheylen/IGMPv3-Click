@@ -18,6 +18,19 @@ private:
     uint8_t byte;
 };
 
+//igmpv3 message format
+struct igmp_packet {
+    uint8_t	igmp_type;		/* 0-7     IGMP type, 	     */
+    uint8_t	igmp_max_resp_code;		/* 8-15     IGMP max resp code     */
+    uint16_t	igmp_cksum;		/* 16-31   checksum		     */
+    uint32_t	group_address;		/* 32-63  		     */
+    uint8_t	resv;		/* 64-67  TODO how represent 4 bits? 		     */
+    bool	S_flag;		/* 68  		     */
+    uint8_t	QRV;		/* 69-71  TODO how represent 3 bits?  		     */
+    uint8_t	QQIC;		/* 72-79   	     */
+    uint16_t	number_of_sources;	/* 80-95    should be zero		     */
+};
+
 const int default_headroom = sizeof(click_ether) + sizeof(click_ip);
 
 template <typename T>

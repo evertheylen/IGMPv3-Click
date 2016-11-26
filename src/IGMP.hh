@@ -9,7 +9,7 @@
 
 CLICK_DECLS
 
-// IGMP does the the management part (which should be obvious since IGMP stands for 
+// IGMP does the the management part (which should be obvious since IGMP stands for
 // Internet Group Management Protocol). Queries in IGMP are only sent to all
 // interfaces, so this needs only one output port. However, we do need to know
 // from which interface this message came, so it has an input port for each
@@ -20,19 +20,26 @@ public:
 	const char *port_count() const	{ return "-/1"; }
 	const char *processing() const	{ return PUSH; }
 	void add_handlers();
-	
+
 	int configure(Vector<String>&, ErrorHandler*);
-	
+
 	void push(int, Packet*);
 	void got_report(int interface, Report* report, Packet* p);
 	void got_query(int interface, Query* query, Packet* p);
-	
+
 	// Host is always assumed to be port 0
 	void host_update(bool include, const String& s);
-	
+
+	//Membership query
+	Timer _timer;
+	uint32_t _interval;
+	void run_timer(Timer *);
+	Packet * IGMP::make_membership_query();
+
+
 private:
 	MulticastTable* table;
-	
+
 	static int join_group_handler(const String &s, Element* e, void*, ErrorHandler* errh);
 	static int leave_group_handler(const String &s, Element* e, void*, ErrorHandler* errh);
 };
