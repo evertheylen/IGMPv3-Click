@@ -11,11 +11,14 @@ CLICK_DECLS
 // ==========
 
 
-GroupState::GroupState(MulticastTable* _table): table(_table) { 
+GroupState::GroupState(MulticastTable* _table, int _interface, IPAddress _group): 
+		table(_table), interface(_interface), group(_group) {
 	init_timer();
 }
 
-GroupState::GroupState(const GroupState& other): include(other.include), sources(other.sources), table(other.table) {
+GroupState::GroupState(const GroupState& other): 
+		include(other.include), sources(other.sources), 
+		table(other.table), interface(other.interface), group(other.group) {
 	init_timer();
 }
 
@@ -23,6 +26,8 @@ GroupState& GroupState::operator=(const GroupState& other) {
 	include = other.include;
 	sources = other.sources;
 	table = other.table;
+	interface = other.interface;
+	group = other.group;
 	init_timer();
 	return *this;
 }
@@ -74,11 +79,7 @@ void GroupState::run_timer(Timer* t, void* user_data) {
 }
 
 void GroupState::timer_expired() {
-	if (not include) {
-		click_chatter("GroupState timer expired, switching to INCLUDE\n");
-		include = INCLUDE;
-		// TODO clean table
-	}
+	table->group_timer_expired(*this);
 }
 
 const GroupState GroupState::DEFAULT = GroupState();
@@ -127,7 +128,7 @@ void MulticastTable::set(int interface, IPAddress group, bool include) {
 	if (it2 == subtable.end()) {
 		// emplace true
 		click_chatter("subemplacing %d, %d\n", group, include);
-		gs = &(subtable[group] = GroupState(this));
+		gs = &(subtable[group] = GroupState(this, interface, group));
 	} else {
 		gs = &it2->second;
 	}
@@ -135,6 +136,17 @@ void MulticastTable::set(int interface, IPAddress group, bool include) {
 	gs->change_to(include, interface == 0);
 	if (gs->is_default()) {
 		subtable.erase(group);
+	}
+}
+
+void MulticastTable::group_timer_expired(GroupState& gs) {
+	if (not gs.include) {
+		click_chatter("GroupState timer expired, switching to INCLUDE\n");
+		gs.include = INCLUDE;
+		if (gs.is_default()) {
+			auto it = table.find(gs.interface);
+			if (it != table.end()) it->second.erase(gs.group);
+		}
 	}
 }
 

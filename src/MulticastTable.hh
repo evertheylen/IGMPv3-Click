@@ -16,13 +16,17 @@ class MulticastTable;
 
 class GroupState {
 public:
-	// default state:
+	// state:
 	bool include = INCLUDE;
 	std::set<IPAddress> sources; // = {}
 	Timer timer;
-	MulticastTable* table;
 	
-	GroupState(MulticastTable* _table = nullptr);
+	// other direction
+	MulticastTable* table;
+	int interface;
+	IPAddress group;
+	
+	GroupState(MulticastTable* _table = nullptr, int _interface = -1, IPAddress _group = 0);
 	GroupState(const GroupState& other);
 	GroupState& operator=(const GroupState&);
 	void init_timer();
@@ -58,10 +62,11 @@ public:
 	const char *class_name() const	{ return "MulticastTable"; }
 	void add_handlers();
 	
-	
 	bool get(int interface, IPAddress group);
 	void set(int interface, IPAddress group, bool include);
 	SubTable& get_subtable(int interface);
+	
+	void group_timer_expired(GroupState& gs);
 	
 	void set_igmp(IGMP* igmp);
 	
