@@ -39,7 +39,7 @@ const IPAddress REPORT_ADDRESS        = 0x160000E0; // 224.0.0.22
 namespace defaults {
 	const uint8_t ROBUSTNESS = 2;
 	
-	const seconds QUERY_INTERVAL = 8; // 125, but lowered for debugging purposes
+	const seconds QUERY_INTERVAL = 125; // 125, but lowered for debugging purposes
 	const MiniFloat QUERY_INTERVAL_CODE = MiniFloat(QUERY_INTERVAL);
 	
 	const centiseconds MAX_RESP_TIME = 100;
