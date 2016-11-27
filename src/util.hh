@@ -51,3 +51,14 @@ void pointer_add(T*& ptr, int n) {
 	_ptr += n;
 	ptr = (T*) _ptr;
 }
+
+template <typename T>
+bool checksum_ok(Packet* p) {
+	T* obj = (T*) p->data();
+	uint16_t checksum = obj->checksum;
+	obj->checksum = 0;
+	bool ok = (click_in_cksum(p->data(), p->length()) == checksum);
+	obj->checksum = checksum;
+	if (not ok) click_chatter("Checksum not ok!");
+	return ok;
+}

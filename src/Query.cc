@@ -9,7 +9,12 @@ QueryBuilder::QueryBuilder(IPAddress group_address) {
 	query->group_address = group_address;
 }
 
-void QueryBuilder::set_checksum() {
+void QueryBuilder::prepare() {
+	if (query()->group_address == IPAddress(0)) { // general query
+		packet->set_dst_ip_anno(GENERAL_QUERY_ADDRESS);
+	} else { // group-specific query
+		packet->set_dst_ip_anno(query()->group_address);
+	}
 	query()->checksum = 0;
 	query()->checksum = click_in_cksum(packet->data(), packet->length());
 }

@@ -62,13 +62,26 @@ void GroupState::change_to(bool _include, bool local) {
 	include = _include;
 }
 
+bool GroupState::is_default() {
+	return (include == DEFAULT.include)
+		and (sources.empty());
+		// TODO timer?
+}
+
+
 void GroupState::run_timer(Timer* t, void* user_data) {
 	((GroupState*) user_data)->timer_expired();
 }
 
 void GroupState::timer_expired() {
-	click_chatter("GroupState timer expired\n");
+	if (not include) {
+		click_chatter("GroupState timer expired, switching to INCLUDE\n");
+		include = INCLUDE;
+		// TODO clean table
+	}
 }
+
+const GroupState GroupState::DEFAULT = GroupState();
 
 
 // Table methods
@@ -77,15 +90,24 @@ void GroupState::timer_expired() {
 bool MulticastTable::get(int interface, IPAddress group) {
 	auto it = table.find(interface);
 	if (it == table.end()) {
-		return default_group_state.include;
+		return GroupState::DEFAULT.include;
 	} else {
 		auto it2 = it->second.find(group);
 		if (it2 == it->second.end()) {
-			return default_group_state.include;
+			return GroupState::DEFAULT.include;
 		} else {
 			return it2->second.include;
 		}
 	}
+}
+
+MulticastTable::SubTable& MulticastTable::get_subtable(int interface) {
+	auto it = table.find(interface);
+	if (it == table.end()) {
+		table[interface] = SubTable();
+		return table.find(interface)->second;
+	}
+	return it->second;
 }
 
 void MulticastTable::set(int interface, IPAddress group, bool include) {
@@ -111,6 +133,9 @@ void MulticastTable::set(int interface, IPAddress group, bool include) {
 	}
 	
 	gs->change_to(include, interface == 0);
+	if (gs->is_default()) {
+		subtable.erase(group);
+	}
 }
 
 
@@ -145,7 +170,6 @@ void MulticastTable::set_igmp(IGMP* _igmp) {
 	igmp = _igmp;
 }
 
-const GroupState MulticastTable::default_group_state = GroupState();
 
 CLICK_ENDDECLS
 EXPORT_ELEMENT(MulticastTable)

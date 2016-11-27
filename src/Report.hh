@@ -42,7 +42,7 @@ public:
 		return add_record(type, multicast_address, {}, extra_sources);
 	}
 	
-	void set_checksum();
+	void prepare();
 	
 	inline Report* report() { return (Report*) packet->data(); }
 	

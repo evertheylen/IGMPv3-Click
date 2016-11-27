@@ -19,7 +19,7 @@ struct Query {
 	bool S : 1;
 	uint8_t QRV : 3;
 	MiniFloat QQIC = defaults::QUERY_INTERVAL_CODE;
-	uint8_t N = 0;
+	uint16_t N = 0;
 	// TODO: source addresses go here
 };
 
@@ -27,7 +27,7 @@ struct Query {
 class QueryBuilder {
 public:
 	QueryBuilder(IPAddress group_address);
-	void set_checksum();
+	void prepare();
 	inline Query* query() { return (Query*) packet->data(); }
 	
 	WritablePacket* packet;

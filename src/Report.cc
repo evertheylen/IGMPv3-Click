@@ -27,7 +27,8 @@ GroupRecord* ReportBuilder::add_record(RecordType type, IPAddress multicast_addr
 	return rec;
 }
 
-void ReportBuilder::set_checksum() {
+void ReportBuilder::prepare() {
+	packet->set_dst_ip_anno(REPORT_ADDRESS);
 	report()->checksum = 0;
 	report()->checksum = click_in_cksum(packet->data(), packet->length());
 }

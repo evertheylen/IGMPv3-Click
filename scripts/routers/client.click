@@ -40,7 +40,7 @@ elementclass Client {
 		-> strip_igmp::StripIPHeader
 		-> igmp
 		-> IPEncap(2, $address, DST DST_ANNO, TTL 1)
-		-> IPPrint("Client igmp sent something")
+		//-> IPPrint("Client igmp sent something")
 		-> arpq :: ARPQuerier($address)
 		-> output
 	

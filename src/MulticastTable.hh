@@ -30,9 +30,13 @@ public:
 	// set and process timers etc
 	void change_to(bool _include, bool local);
 	
+	bool is_default();
+	
 	// fired on timer expiry
 	static void run_timer(Timer* t, void* user_data);
 	void timer_expired();
+	
+	static const GroupState DEFAULT;
 };
 
 namespace std {
@@ -49,13 +53,15 @@ class IGMP;
 // The MulticastTable won't do any effort converting them.
 class MulticastTable: public Element {
 public:
+	using SubTable = std::unordered_map<IPAddress, GroupState>;
+	
 	const char *class_name() const	{ return "MulticastTable"; }
 	void add_handlers();
 	
-	static const GroupState default_group_state;
 	
 	bool get(int interface, IPAddress group);
 	void set(int interface, IPAddress group, bool include);
+	SubTable& get_subtable(int interface);
 	
 	void set_igmp(IGMP* igmp);
 	
@@ -63,7 +69,6 @@ public:
 	
 private:
 	// 0 is the local interface
-	using SubTable = std::unordered_map<IPAddress, GroupState>;
 	std::map<int, SubTable> table;
 	
 	IGMP* igmp;

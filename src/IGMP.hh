@@ -30,7 +30,7 @@ public:
 	void got_query(int interface, Query* query, Packet* p);
 
 	// Host is always assumed to be port 0
-	void host_update(bool include, const String& s);
+	void host_update(bool include, bool silent, const String& s);
 	
 	inline centiseconds GMI() { return (robustness*query_interval)*10 + max_resp_time; }
 
@@ -41,8 +41,8 @@ protected:
 	seconds query_interval = defaults::QUERY_INTERVAL;
 	centiseconds max_resp_time = defaults::MAX_RESP_TIME;
 	
-	static int join_group_handler(const String &s, Element* e, void*, ErrorHandler* errh);
-	static int leave_group_handler(const String &s, Element* e, void*, ErrorHandler* errh);
+	static int join_group_handler(const String &s, Element* e, void* silent, ErrorHandler* errh);
+	static int leave_group_handler(const String &s, Element* e, void* silent, ErrorHandler* errh);
 };
 
 CLICK_ENDDECLS
