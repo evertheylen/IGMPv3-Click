@@ -9,19 +9,7 @@
 #include <cstdint>
 #include <cmath>
 
-//4.1.7, p10
-struct MiniFloat {
-	MiniFloat() = default;
-	MiniFloat(unsigned int i);
-	MiniFloat(const MiniFloat& other);
-	
-	void set(unsigned int i);  // exception if too big or negative (or assert)
-	unsigned int get();  // should always work
-	unsigned int get_int();  // works only if the byte is actually an int, otherwise an exception
-
-private:
-	uint8_t byte;
-};
+using MiniFloat = uint8_t;
 
 using centiseconds = unsigned int;
 using seconds = unsigned int;
