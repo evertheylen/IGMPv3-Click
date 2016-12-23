@@ -23,9 +23,9 @@ elementclass Client {
 	// Multicast stuff
 	// ===============
 		
-	mc_table :: MulticastTable;
-	igmp :: IGMP(mc_table);
-	mc :: Multicast(mc_table);
+	mc_table :: ClientMCTable;
+	igmp :: ClientIGMP(mc_table);
+	mc :: ClientMC(mc_table);
 	igmp_class::IPClassifier(
 		ip proto igmp and dst host 224.0.0.1,
 		ip proto igmp,

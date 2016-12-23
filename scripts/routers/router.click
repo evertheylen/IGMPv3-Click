@@ -38,9 +38,9 @@ elementclass Router {
 	// Important Multicast / IGMP elements
 	// ===================================
 	
-	mc_table :: MulticastTable;
-	igmp :: IGMPRouter(mc_table) -> igmp_tee :: Tee(3)
-	mc :: Multicast(mc_table);
+	mc_table :: RouterMCTable;
+	igmp :: RouterIGMP(mc_table)
+	mc :: RouterMC(mc_table);
 	
 	rt[4] -> mc
 	
@@ -120,26 +120,24 @@ elementclass Router {
 	// Local delivery
 	rt[0]
 		-> [3]output
-	mc[0]
-		-> [3]output
 	
 	// Forwarding paths per interface
 	// ==============================
 	
 	// interface 0 (server)
-	mc[1]
-		-> server_db :: DropBroadcasts
+	mc[0]
+		-> server_ttl :: DecIPTTL
 	
 	rt[1]
-		-> server_db
+		-> DropBroadcasts
 		-> server_paint :: PaintTee(1)
 		-> server_ipgw :: IPGWOptions($server_address)
 		-> FixIPSrc($server_address)
-		-> server_ttl :: DecIPTTL
+		-> server_ttl
 		-> server_frag :: IPFragmenter(1500)
 		-> server_arpq;
 	
-	igmp_tee[0]
+	igmp[0]
 		-> IPEncap(2, $server_address, DST DST_ANNO, TTL 1)
 		-> server_arpq
 	
@@ -161,19 +159,19 @@ elementclass Router {
 	
 	
 	// interface 1 (client1)
-	mc[2]
-		-> client1_db :: DropBroadcasts
+	mc[1]
+		-> client1_ttl :: DecIPTTL
 		
 	rt[2]
-		-> client1_db
+		-> DropBroadcasts
 		-> client1_paint :: PaintTee(2)
 		-> client1_ipgw :: IPGWOptions($client1_address)
 		-> FixIPSrc($client1_address)
-		-> client1_ttl :: DecIPTTL
+		-> client1_ttl
 		-> client1_frag :: IPFragmenter(1500)
 		-> client1_arpq;
 	
-	igmp_tee[1]
+	igmp[1]
 		-> IPEncap(2, $client1_address, DST DST_ANNO, TTL 1)
 		-> client1_arpq
 	
@@ -195,19 +193,19 @@ elementclass Router {
 	
 		
 	// interface 2 (client2)
-	mc[3]
-		-> client2_db :: DropBroadcasts
+	mc[2]
+		-> client2_ttl :: DecIPTTL
 	
 	rt[3]
-		-> client2_db
+		-> DropBroadcasts
 		-> client2_paint :: PaintTee(3)
 		-> client2_ipgw :: IPGWOptions($client2_address)
 		-> FixIPSrc($client2_address)
-		-> client2_ttl :: DecIPTTL
+		-> client2_ttl
 		-> client2_frag :: IPFragmenter(1500)
 		-> client2_arpq;
 	
-	igmp_tee[2]
+	igmp[2]
 		-> IPEncap(2, $client2_address, DST DST_ANNO, TTL 1)
 		-> client2_arpq
 	

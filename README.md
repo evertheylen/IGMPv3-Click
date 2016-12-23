@@ -9,7 +9,7 @@ Implementatie van het IGMP protocol, versie 3.
 
   - De `src` map bevat alle code voor de elementen, en de inhoud hiervan kan dus in de `elements/local` map worden gezet.
   
-  - De `scripts` map bevat alle nodige Click scripts. Standaard hebben we de Multicast Server geconfigureerd op `224.12.23.34`.
+  - De `scripts` map bevat alle nodige Click scripts. Standaard hebben we de Multicast Server geconfigureerd op `224.4.4.4`.
   
 
 ## Compilatie

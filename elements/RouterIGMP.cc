@@ -1,0 +1,60 @@
+#include <click/config.h>
+#include <click/error.hh>
+
+#include "RouterIGMP.hh"
+#include <click/args.hh>
+
+CLICK_DECLS
+
+int RouterIGMP::initialize(ErrorHandler* errh) {
+	timer.initialize(this);
+	timer.assign(this);
+	timer.schedule_now();
+	return 0;
+}
+
+void RouterIGMP::run_timer(Timer*) {
+	click_chatter("Sending general query");
+	QueryBuilder qb(0); // 0 --> General Query
+	qb.prepare();
+	for (int i=0; i<noutputs(); i++) output(i).push(qb.packet->clone());
+	qb.packet->kill();
+	timer.reschedule_after_sec(query_interval);
+}
+
+void RouterIGMP::got_report(int port, Report* report, Packet* p) {
+	uint16_t N = ntoh_16(report->number_group_records);
+	click_chatter("got report with %d records\n", N);
+
+	GroupRecord* record = (GroupRecord*) (p->data() + sizeof(Report));
+	for (int i=0; i<N; i++) {
+		RouterGroupState& gs = table->get_groupstate(port, record->multicast_address);
+		click_chatter("RouterIGMP port %d: got a Record:       %s", port, record->description().c_str());
+		click_chatter("RouterIGMP port %d: current GroupState: %s", port, gs.description().c_str());
+		if (is_current_state(record->type)) {
+			gs.got_current_state_record(record);
+		} else if (is_state_change(record->type)) {
+			gs.got_state_change_record(record);
+		}
+		click_chatter("RouterIGMP port %d: new GroupState:     %s", port, gs.description().c_str());
+		
+		if (gs.is_default()) {
+			table->get_subtable(port).erase(record->multicast_address);
+		}
+		
+		record = pointer_add(record, record->size());
+	}
+}
+
+
+int RouterIGMP::configure(Vector<String> &conf, ErrorHandler *errh) {
+	if (Args(conf, this, errh)
+		.read_mp("TABLE", ElementCastArg("RouterMCTable"), table)
+		.consume() < 0)
+		return -1;
+	table->set_igmp(this);
+	return 0;
+}
+
+CLICK_ENDDECLS
+EXPORT_ELEMENT(RouterIGMP)
