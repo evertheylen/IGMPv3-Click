@@ -24,7 +24,7 @@ void ClientIGMP::got_query(int port, Query* query, Packet* p) {
 	// See 5.2
 	if (query->group_address == IPAddress(0)) {
 		// Page 23, point 1
-		click_chatter("got General Query\n");
+		click_chatter("%s: \t got General Query\n", name().c_str());
 		ClientMCTable::SubTable& subtable = table->get_subtable(LOCAL);
 		int size = subtable.size();
 		if (size > 0) {
@@ -37,7 +37,7 @@ void ClientIGMP::got_query(int port, Query* query, Packet* p) {
 		}
 	} else if (query->N == 0) {
 		// Page 24, point 2
-		click_chatter("got Group-Specific Query\n");
+		click_chatter("%s:\t got Group-Specific Query\n", name().c_str());
 		ReportBuilder rb(1);
 		const ClientGroupState& gs = table->cget_groupstate(LOCAL, query->group_address);
 		if (not gs.is_default()) {
@@ -47,7 +47,7 @@ void ClientIGMP::got_query(int port, Query* query, Packet* p) {
 		}
 	} else {
 		// Page 24, point 3 (has a table)
-		click_chatter("got Group-and-Source-Specific Query\n");
+		click_chatter("%s: \tgot Group-and-Source-Specific Query\n", name().c_str());
 		const ClientGroupState& gs = table->cget_groupstate(LOCAL, query->group_address);
 		
 		// in case of include, this is A*B, otherwise it is B-A
@@ -63,7 +63,7 @@ void ClientIGMP::got_query(int port, Query* query, Packet* p) {
 			rb.prepare();
 			output(0).push(rb.packet);
 		} else {
-			click_chatter("no sources to report!\n");
+			click_chatter("%s: \tno sources to report!\n", name().c_str());
 		}
 	}
 }
@@ -86,7 +86,7 @@ void ClientIGMP::change_mode(const String& s, bool silent) {
 	std::vector<String> parts = split(s, ' ');
 	
 	if (parts.size() < 2) {
-		click_chatter("Got invalid change_mode handler request: not enough arguments\n");
+		click_chatter("%s: \tGot invalid change_mode handler request: not enough arguments\n", name().c_str());
 		return;
 	}
 	
@@ -96,7 +96,7 @@ void ClientIGMP::change_mode(const String& s, bool silent) {
 	} else if (parts[0] == String("EXCLUDE")) {
 		include = false;
 	} else {
-		click_chatter("Got invalid change_mode handler request: wrong filter-mode\n");
+		click_chatter("%s: \tGot invalid change_mode handler request: wrong filter-mode\n", name().c_str());
 		return;
 	}
 	
@@ -107,27 +107,32 @@ void ClientIGMP::change_mode(const String& s, bool silent) {
 		sources[i-2] = IPAddress(parts[i]);
 	}
 	
-	if (include) click_chatter("host%s leaves a group\n", silent? " (silently)" : "");
-	else click_chatter("host%s joins a group\n", silent? " (silently)": "");
+	ClientGroupState& gs = table->get_groupstate(LOCAL, group); //, not include, sources);
+	
+	std::vector<IPAddress> A_B;
+	std::vector<IPAddress> B_A;
+	
+	if (not silent) {
+		for (const IPAddress& a: gs.sources)
+			if (std::find(sources.begin(), sources.end(), a) == sources.end())
+				A_B.push_back(a);
+	
+		for (const IPAddress& b: sources)
+			if (gs.sources.find(b) == gs.sources.end())
+				B_A.push_back(b);
+	}
+	
+	// set own table
+	bool gs_prev_include = gs.include;
+	gs.change_to(include, sources);
+	click_chatter("%s: \tnew local group state: %s\n", name().c_str(), gs.description().c_str());
 
 	if (not silent) {
 		// tell the router
-		const ClientGroupState& gs = table->get_groupstate(LOCAL, group);
 		// Translation of table at page 20
 		// A = old set of sources
 		// B = new set of sources
-		if (gs.include == include) {
-			
-			std::vector<IPAddress> A_B;
-			for (const IPAddress& a: gs.sources)
-				if (std::find(sources.begin(), sources.end(), a) == sources.end())
-					A_B.push_back(a);
-			
-			std::vector<IPAddress> B_A;
-			for (const IPAddress& b: sources)
-				if (gs.sources.find(b) == gs.sources.end())
-					B_A.push_back(b);
-			
+		if (gs_prev_include == include) {
 			if (not (B_A.empty() and A_B.empty())) {
 				ReportBuilder rb(int(not B_A.empty()) + int(not A_B.empty()));
 				
@@ -144,32 +149,31 @@ void ClientIGMP::change_mode(const String& s, bool silent) {
 				}
 				
 				// TODO robustness
+				click_chatter("%s: \tSending to the router: %d records\n", name().c_str(), ntoh_16(rb.report()->number_group_records));
 				rb.prepare();
 				output(0).push(rb.packet);
 			} else {
-				click_chatter("No new sources for change_mode...\n");
+				click_chatter("%s: \tNo new sources for change_mode...\n", name().c_str());
 			}
 		} else {
 			ReportBuilder rb(1);
-			rb.add_record(CHANGE_TO_(include), group, sources);
+			GroupRecord* gr = rb.add_record(CHANGE_TO_(include), group, sources);
 			rb.prepare();
+			click_chatter("%s: \tSending to the router: %s\n", name().c_str(), gr->description().c_str());
 			output(0).push(rb.packet);
 		}
 	}
-
-	// set own table
-	ClientGroupState& gs = table->get_groupstate(LOCAL, group); //, not include, sources);
-	gs.change_to(include, sources);
+	
 	if (gs.is_default()) table->get_subtable(LOCAL).erase(group);
 }
 
 void ClientIGMP::change_sources(const String& s, bool allow) {
 	std::vector<String> parts = split(s, ' ');
 	if (parts.size() == 0) {
-		click_chatter("Got invalid change_mode handler request: not enough arguments\n");
+		click_chatter("%s: \tGot invalid change_mode handler request: not enough arguments\n", name().c_str());
 		return;
 	} else if (parts.size() == 1) {
-		click_chatter("Ignoring change_sources call because of empty sources\n");
+		click_chatter("%s: \tIgnoring change_sources call because of empty sources\n", name().c_str());
 		return;
 	}
 	
@@ -179,19 +183,18 @@ void ClientIGMP::change_sources(const String& s, bool allow) {
 	for (int i=1; i<parts.size(); i++) {
 		sources[i-1] = IPAddress(parts[i]);
 	}
-	
-	// change_sources is never silent
-	ReportBuilder rb(1);
-	rb.add_record(allow ? RecordType::ALLOW_NEW_SOURCES : RecordType::BLOCK_OLD_SOURCES,
-				  group, sources);
-	rb.prepare();
-	output(0).push(rb.packet);
-	click_chatter("Sent a report to the router %s %d sources\n", allow? "allow" : "block", sources.size());
-	
 	// set own table
 	ClientGroupState& gs = table->get_groupstate(LOCAL, group); //, not include, sources);
 	gs.change_sources(allow, sources);
 	if (gs.is_default()) table->get_subtable(LOCAL).erase(group);
+	
+	// change_sources is never silent
+	ReportBuilder rb(1);
+	GroupRecord* gr = rb.add_record(allow ? RecordType::ALLOW_NEW_SOURCES : RecordType::BLOCK_OLD_SOURCES,
+									group, sources);
+	rb.prepare();
+	click_chatter("%s \tSending to the router: %s\n", name().c_str(), gr->description().c_str());
+	output(0).push(rb.packet);
 }
 
 void ClientIGMP::add_handlers() {

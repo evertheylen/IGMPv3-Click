@@ -124,9 +124,9 @@ AddressInfo(a3 192.168.1.3/24 00:50:BA:85:84:A4);
 AddressInfo(a4 192.168.1.4/24 00:50:BA:85:84:A5);
 AddressInfo(a5 192.168.1.5/24 00:50:BA:85:84:A6);
 AddressInfo(a6 192.168.1.6/24 00:50:BA:85:84:A7);
-AddressInfo(a7 192.168.1.6/24 00:50:BA:85:84:A8);
-AddressInfo(a8 192.168.1.6/24 00:50:BA:85:84:A9);
-AddressInfo(a9 192.168.1.6/24 00:50:BA:85:84:AA);
+AddressInfo(a7 192.168.1.7/24 00:50:BA:85:84:A8);
+AddressInfo(a8 192.168.1.8/24 00:50:BA:85:84:A9);
+AddressInfo(a9 192.168.1.9/24 00:50:BA:85:84:AA);
 
 s1::Source(g1, a1) -> [1] server_network [1] -> s1
 s2::Source(g1, a2) -> [2] server_network [2] -> s2

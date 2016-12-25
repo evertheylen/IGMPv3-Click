@@ -26,7 +26,7 @@ struct GroupRecord {
 	// Source addresses go here
 	// Auxiliary data goes here
 	
-	inline int size() { return sizeof(GroupRecord) + (sizeof(IPAddress) * N) + aux_data_len; }
+	inline int size() { return sizeof(GroupRecord) + (sizeof(IPAddress) * ntoh_16(N)) + aux_data_len; }
 	inline bool include() {
 		return (type == RecordType::CHANGE_TO_INCLUDE_MODE) or (type == RecordType::MODE_IS_INCLUDE);
 	}
@@ -40,7 +40,6 @@ struct GroupRecord {
 	}
 };
 
-// ReportBuilder does NOT care about aux data
 class ReportBuilder {
 public:
 	ReportBuilder(uint16_t number_group_records, int tailroom = -1);

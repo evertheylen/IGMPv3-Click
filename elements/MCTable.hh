@@ -42,7 +42,7 @@ public:
 		if (gs_it == it->second.end()) return false;
 		
 		bool may_pass = gs_it->second.forward(source);
-		click_chatter("GroupState = %s --> %s\n", gs_it->second.description().c_str(),
+		click_chatter("%s: \tGroupState = %s --> %s\n", name().c_str(), gs_it->second.description().c_str(),
 					  may_pass ? "Go along..." : "DENIED");
 		return may_pass;
 	}
@@ -91,7 +91,7 @@ protected:
 		for (auto iit: table) {
 			s += String("--- Interface ") + String(iit.first) + " ---\n";
 			for (auto it: iit.second) {
-				s += IPAddress(it.first).unparse() + "\t" + String((uint32_t) it.first) + "\t" + (it.second.include? "INCLUDE" : "EXCLUDE") + "\n";
+				s += IPAddress(it.first).unparse() + "\t" + String(it.second.description().c_str()) + "\n";
 			}
 			s += "\n";
 		}

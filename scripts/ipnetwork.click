@@ -67,7 +67,7 @@ client22
 	-> client22
 
 client22[1]
-	-> IPPrint("client22 --received a packet") 
+	-> IPPrint("client22 -- received a packet") 
 	-> Discard
 
 client31

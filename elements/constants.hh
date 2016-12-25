@@ -60,6 +60,8 @@ inline const char* RecordType_to_string(const RecordType& r) {
 			return "ALLOW";
 		case RecordType::BLOCK_OLD_SOURCES:
 			return "BLOCK";
+		default:
+			return "WTF?";
 	}
 }
 

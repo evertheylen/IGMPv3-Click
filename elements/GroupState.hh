@@ -28,14 +28,12 @@ public:
 		include = _include;
 		sources.clear();
 		for (IPAddress s: _sources) sources.insert(s);
-		click_chatter("Changed local GroupState to %s", description().c_str());
 	}
 	
 	template <typename Iterable>
 	void change_sources(bool allow, Iterable _sources) {
 		if (include == allow) sources.insert(_sources.begin(), _sources.end());
-		else for (IPAddress _s: sources) sources.erase(_s);
-		click_chatter("Changed local GroupState to %s", description().c_str());
+		else for (IPAddress _s: _sources) sources.erase(_s);
 	}
 	
 	bool forward(IPAddress source);

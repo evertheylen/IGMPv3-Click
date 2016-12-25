@@ -96,7 +96,7 @@ bool checksum_ok(Packet* p) {
 	obj->checksum = 0;
 	bool ok = (click_in_cksum(p->data(), p->length()) == checksum);
 	obj->checksum = checksum;
-	if (not ok) click_chatter("Checksum not ok!");
+	if (not ok) click_chatter("!!! Checksum not ok!");
 	return ok;
 }
 

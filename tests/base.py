@@ -2,6 +2,7 @@ import unittest
 import pexpect
 import time, io, sys, os, re
 from itertools import chain
+import threading
 
 # Settings
 # --------
@@ -11,6 +12,7 @@ def localdir(location):
 
 click_loc = localdir("../../click/userlevel/click")
 
+general_query = 9
 
 # Color stuff
 # -----------
@@ -24,7 +26,7 @@ pink = (255, 0, 255)
 yellow = (255, 255, 0)
 black = (0, 0, 0)
 white = (255, 255, 255)
- 
+
 def _rgb(rf,gf,bf,rb=0,gb=0,bb=0):
     # red front, ..., blue back
     return "\033[1;38;2;{};{};{};48;2;{};{};{}m".format(rf,gf,bf,rb,gb,bb)
@@ -65,11 +67,12 @@ ip_re = "\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
 
 class ClickTest(unittest.TestCase):
     def setUp(self):
+        self.port = 6000
         self.click_buffer = io.BytesIO()
-        self.click = pexpect.spawn(click_loc + " " + self.script + " -p 5000", 
+        self.click = pexpect.spawn(click_loc + " " + self.script + " -p " + str(self.port), 
                                    logfile=self.click_buffer, timeout=2)
-        time.sleep(0.5)
-        self.telnet = pexpect.spawn("telnet 127.0.0.1 5000")
+        self.click.expect("router")
+        self.telnet = pexpect.spawn("telnet 127.0.0.1 " + str(self.port), timeout=2)
         self.telnet.logfile_send = ColoredWrite(self.click_buffer)
         self.telnet.expect("ControlSocket")
     
@@ -91,20 +94,42 @@ class ClickTest(unittest.TestCase):
         if exc_list and exc_list[-1][0] is self:
             return exc_list[-1][1]
     
-    def clients(self, *, online=[], offline=[], group=None, source=None, **kw):
+    def clients(self, *, online=[], offline=[], **kw):
         both = online + offline
-        if group is None: group = ip_re
-        else: group = group.replace(".", "\.")
-        if source is None: source = ip_re
-        else: source = source.replace(".", "\.")
-        extra_message = (" for group " + group.replace("\.", ".") if group != ip_re else "") +\
-                        (" for source " + source.replace("\.", ".") if source != ip_re else "")
-        
-        patterns = ["{} -- received a packet.*{source}.*{group}".format(i, group=group, source=source) for i in both]
-        self.click_buffer.write(rgbtext("--- asserting online = " + str(online) + ", offline = " + str(offline) + extra_message + "\n", cyan).encode())
-        index = self.click.expect(pexpect.TIMEOUT)
-        before = self.click.before.decode("utf-8")
-        for i, p in enumerate(patterns):
-            self.assertEqual(i < len(online), re.search(p, before) is not None,
-                             (both[i] + " should be " + "online" if i < len(online) else "offline") + extra_message)
+        # contains either strings --> client names
+        # or tuples of (client name, group, source)
 
+        patterns = []
+        for i in both:
+            if isinstance(i, tuple):
+                patterns.append("{0} -- received a packet.*{2}.*{1}".format(*i))
+            else:
+                patterns.append("{0} -- received a packet".format(i))
+                
+        self.click_buffer.write(rgbtext("--- asserting online = " + str(online) + ", offline = " + str(offline) + "\n", cyan).encode())
+        self.click.expect(".*")
+        self.click.expect(pexpect.TIMEOUT, **kw)
+        text = self.click.before.decode("utf-8")
+        for i, p in enumerate(patterns):
+            self.assertEqual(i < len(online), re.search(p, text) is not None,
+                             (str(both[i]) + " should be " + ("online" if i < len(online) else "offline")) + "\nTEXT:\n" + text)
+    
+    def write(self, s):
+        s = "write " + s + "\n"
+        self.telnet.write(s)
+        self.telnet.expect("OK")
+    
+    def read_print(self, s):
+        self.telnet.write("read " + s + "\n")
+        self.telnet.expect("DATA")
+        self.telnet.expect(pexpect.TIMEOUT, timeout=0.1)
+        print(self.telnet.before.decode("utf-8"))
+    
+    def read_expect(self, s, pat):
+        self.telnet.write("read " + s + "\n")
+        #self.telnet.expect("DATA")
+        self.telnet.expect(pat)
+    
+    def expire(self):
+        self.click.expect_exact("expired", timeout=15)  # Wait for sources to expire
+        time.sleep(0.1)  # let it handle other timers

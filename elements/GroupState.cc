@@ -28,7 +28,7 @@ bool ClientGroupState::is_default() const {
 }
 
 std::string ClientGroupState::description() {
-	return std::string(Include_to_string(include)) + ".c(" + list_ips(sources) + ")";
+	return std::string(Include_to_string(include)) + "(" + list_ips(sources) + ") (client version)";
 }
 
 const ClientGroupState ClientGroupState::DEFAULT = ClientGroupState();
@@ -39,7 +39,7 @@ const ClientGroupState ClientGroupState::DEFAULT = ClientGroupState();
 
 SourceTimer::SourceTimer(RouterGroupState* _gs, IPAddress _source, unsigned int milliseconds):
 		gs(_gs), source(_source) {
-	timer.initialize(gs->table);
+	timer.initialize(gs->table, true);
 	timer.assign(RouterGroupState::run_source_timer, this);
 	if (milliseconds > 0) {
 		timer.schedule_after_msec(milliseconds);
@@ -64,7 +64,6 @@ RouterGroupState::RouterGroupState(const RouterGroupState& other):
 
 RouterGroupState::~RouterGroupState() {
 	for (auto it: sources) {
-		// possible BUG: unscheduling timers?
 		delete it.second;
 	}
 }
@@ -80,7 +79,7 @@ RouterGroupState& RouterGroupState::operator=(const RouterGroupState& other) {
 
 void RouterGroupState::init_timer() {
 	if (table != nullptr) {
-		group_timer.initialize((RouterMCTable*) table);
+		group_timer.initialize((RouterMCTable*) table, true);
 		group_timer.assign(RouterGroupState::run_group_timer, this);
 	}
 }
@@ -104,7 +103,7 @@ void RouterGroupState::run_group_timer(Timer* t, void* user_data) {
 
 void RouterGroupState::group_timer_expired() {
 	// see page 28 (top)
-	click_chatter("RouterGroupState timer expired, switching to INCLUDE\n");
+	click_chatter("%s: \tRouterGroupState timer expired, switching to INCLUDE\n", table->igmp->name().c_str());
 	include = INCLUDE;
 	// erase all sources with non-running timers
 	for (auto it = sources.cbegin(); it != sources.cend(); ) {
@@ -124,7 +123,7 @@ void RouterGroupState::run_source_timer(Timer* t, void* user_data) {
 }
 
 void RouterGroupState::source_timer_expired(SourceTimer* source_timer) {
-	click_chatter("SourceTimer expired, for source %s\n", source_timer->source.unparse().c_str());
+	click_chatter("%s: \tSourceTimer expired, for source %s\n", table->igmp->name().c_str(), source_timer->source.unparse().c_str());
 	if (include) {
 		sources.erase(source_timer->source);
 		delete source_timer;
@@ -134,16 +133,18 @@ void RouterGroupState::source_timer_expired(SourceTimer* source_timer) {
 }
 
 void RouterGroupState::schedule_source(IPAddress ip, unsigned int milliseconds) {
-	if (sources.find(ip) == sources.end())
+	if (sources.find(ip) == sources.end()) {
 		sources[ip] = new SourceTimer(this, ip, milliseconds);
-	else
-		sources[ip]->timer.schedule_after_msec(milliseconds);
+	} else {
+		if (milliseconds == 0) sources[ip]->timer.unschedule();
+		else sources[ip]->timer.schedule_after_msec(milliseconds);
+	}
 }
 
 void RouterGroupState::Q() { // Group-Specific Query
 	QueryBuilder qb(group, 0);
 	qb.prepare();
-	table->igmp->push(interface, qb.packet);
+	table->igmp->output(interface).push(qb.packet);
 	unsigned int LMQT_ms = table->igmp->LMQT() * 100;
 	if (LMQT_ms < group_timer_ms()) {
 		group_timer.schedule_after_msec(LMQT_ms);
@@ -164,7 +165,7 @@ void RouterGroupState::Q(Iterable A) {  // Group-And-Source-Specific Query
 	}
 	QueryBuilder qb(group, A);
 	qb.prepare();
-	this->table->igmp->push(interface, qb.packet);
+	this->table->igmp->output(interface).push(qb.packet);
 }
 
 milliseconds RouterGroupState::group_timer_ms() {
@@ -308,25 +309,31 @@ void RouterGroupState::got_state_change_record(GroupRecord* record) {
 			// Delete (A-B)
 			// Send Q(G, A*B)
 			// Group Timer = GMI
+			include = EXCLUDE;
+			
+			std::vector<IPAddress> A;
+			for (auto a: sources) A.push_back(a.first);
 			std::set<IPAddress> A_and_B;
 			for (IPAddress b: record->sources()) {
 				if (sources.find(b) == sources.end()) {
 					schedule_source(b, 0); // (B-A)
+					click_chatter("setting %s to 0, turning the state to %s", b.unparse().c_str(), description().c_str());
 				} else {
 					A_and_B.insert(b);
 				}
 			}
 			
-			for (auto a_it = sources.cbegin(); a_it != sources.cend(); ) {
-				if (A_and_B.find(a_it->first) == A_and_B.end()) { // A-B
+			for (IPAddress a: A) {
+				if (A_and_B.find(a) == A_and_B.end()) { // A-B
+					click_chatter("deleting %s", a.unparse().c_str());
+					auto a_it = sources.find(a);
 					delete a_it->second;
-					a_it = sources.erase(a_it);
-				} else ++a_it;
+					sources.erase(a_it);
+				}
 			}
 			
 			Q(A_and_B);
 			
-			include = EXCLUDE;
 		} else {
 			// ### EXCLUDE (X,Y)    TO_EX (A)      EXCLUDE (A-Y, Y*A)
 			// (A-X-Y) = Group Timer

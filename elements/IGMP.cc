@@ -12,17 +12,17 @@ void IGMP::push(int port, Packet* p) {
 		if (not checksum_ok<Report>(p)) return;
 		got_report(port, (Report*) p->data(), p);
 	} else {
-		click_chatter("IGMP got a message with an unknown type\n");
+		click_chatter("%s: \tIGMP got a message with an unknown type\n", name().c_str());
 	}
 	p->kill();
 }
 
 void IGMP::got_query(int port, Query* query, Packet* p) {
-	click_chatter("IGMP got unexpected query\n");
+	click_chatter("%s: \tgot unexpected query\n", name().c_str());
 }
 
 void IGMP::got_report(int port, Report* report, Packet* p) {
-	click_chatter("IGMP got unexpected report\n");
+	click_chatter("%s: \tgot unexpected report\n", name().c_str());
 }
 
 
