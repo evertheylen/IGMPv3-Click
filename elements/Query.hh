@@ -45,9 +45,12 @@ public:
 	}
 	
 	QueryBuilder(IPAddress group_address, int extra_room = 0);
+	~QueryBuilder();
 	void prepare();
 	inline Query* query() { return (Query*) packet->data(); }
+	inline Packet* new_packet() { return packet->clone(); }
 	
+protected:
 	WritablePacket* packet;
 };
 

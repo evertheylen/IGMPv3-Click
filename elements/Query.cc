@@ -11,6 +11,10 @@ QueryBuilder::QueryBuilder(IPAddress group_address, int extra_room) {
 	query->group_address = group_address;
 }
 
+QueryBuilder::~QueryBuilder() {
+	packet->kill();
+}
+
 void QueryBuilder::prepare() {
 	if (query()->group_address == IPAddress(0)) { // general query
 		assert(query()->N == 0);

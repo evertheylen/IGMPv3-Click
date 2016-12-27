@@ -18,9 +18,9 @@ public:
 	virtual void got_query(int port, Query* query, Packet* p);
 	
 	inline centiseconds GMI() { return (robustness*query_interval)*10 + max_resp_time; }
-	inline centiseconds LMQT() {
-		return last_member_query_count * last_member_query_interval;
-	}
+	inline centiseconds LMQT() { return last_member_query_count * last_member_query_interval; }
+	inline seconds URI() { return unsolicited_report_interval; }
+	inline uint8_t get_robustness() { return robustness; }
 	
 protected:
 	uint8_t robustness = defaults::ROBUSTNESS;
@@ -28,4 +28,5 @@ protected:
 	centiseconds max_resp_time = defaults::MAX_RESP_TIME;
 	centiseconds last_member_query_interval = defaults::LAST_MEMBER_QUERY_INTERVAL;
 	unsigned int last_member_query_count = defaults::LAST_MEMBER_QUERY_COUNT;
+	seconds unsolicited_report_interval = defaults::UNSOLICITED_REPORT_INTERVAL;
 };

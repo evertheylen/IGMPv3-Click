@@ -22,8 +22,6 @@ public:
 	virtual bool get(int interface, IPAddress group, IPAddress source) = 0;
 };
 
-// IP Addresses are saved as much as possible in network order!
-// The MCTable won't do any effort converting them.
 template <typename _GroupState>
 class MCTable: public BaseMCTable {
 public:
@@ -71,6 +69,13 @@ public:
 		else return it->second;
 	}
 	
+	void groupstate_changed(GroupState& gs) {
+		// delete group record if it is default
+		if (gs.is_default()) {
+			get_subtable(gs.interface).erase(gs.group);
+		}
+	}
+	
 	void set_igmp(IGMP* _igmp) {
 		igmp = _igmp;
 	}
@@ -99,33 +104,20 @@ protected:
 	}
 };
 
+#include "ClientGroupState.hh"
+#include "RouterGroupState.hh"
+
+//using ClientMCTable = MCTable<ClientGroupState>;
+//using RouterMCTable = MCTable<RouterGroupState>;
+
 class ClientMCTable: public MCTable<ClientGroupState> {
 public:
 	const char *class_name() const	{ return "ClientMCTable"; }
-	
-	using GroupState = ClientGroupState;
-	using SubTable = MCTable<ClientGroupState>::SubTable;
-	
-	using MCTable<ClientGroupState>::MCTable;
 };
 
 class RouterMCTable: public MCTable<RouterGroupState> {
 public:
 	const char *class_name() const	{ return "RouterMCTable"; }
-	
-	using GroupState = RouterGroupState;
-	using SubTable = MCTable<RouterGroupState>::SubTable;
-	
-	using MCTable<RouterGroupState>::MCTable;
-	
-	void groupstate_changed(GroupState& gs) {
-		// delete group record if it is default
-		if (gs.is_default()) {
-			get_subtable(gs.interface).erase(gs.group);
-		}
-	}
 };
 
 CLICK_ENDDECLS
-
-

@@ -70,7 +70,7 @@ class ClickTest(unittest.TestCase):
         self.port = 6000
         self.click_buffer = io.BytesIO()
         self.click = pexpect.spawn(click_loc + " " + self.script + " -p " + str(self.port), 
-                                   logfile=self.click_buffer, timeout=2)
+                                   logfile=self.click_buffer, timeout=3)
         self.click.expect("router")
         self.telnet = pexpect.spawn("telnet 127.0.0.1 " + str(self.port), timeout=2)
         self.telnet.logfile_send = ColoredWrite(self.click_buffer)

@@ -10,8 +10,11 @@
 #include <cmath>
 #include <vector>
 #include <set>
+#include <random>
 
 using MiniFloat = uint8_t; // TODO
+
+extern std::random_device rd;
 
 // TODO sort this out...
 // It seems it is impossible to maintain a sum while running, you have to recalculate

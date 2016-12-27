@@ -2,6 +2,8 @@
 #pragma once
 
 #include <map>
+#include <list>
+#include <memory>
 
 #include <click/element.hh>
 
@@ -11,6 +13,8 @@
 #include "IGMP.hh"
 
 CLICK_DECLS
+
+class ClientIGMP;
 
 // IGMP does the the management part.
 class ClientIGMP: public IGMP {

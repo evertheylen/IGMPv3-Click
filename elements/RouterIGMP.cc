@@ -1,8 +1,9 @@
 #include <click/config.h>
 #include <click/error.hh>
+#include <click/args.hh>
 
 #include "RouterIGMP.hh"
-#include <click/args.hh>
+#include "RouterGroupState.hh"
 
 CLICK_DECLS
 
@@ -17,8 +18,7 @@ void RouterIGMP::run_timer(Timer*) {
 	click_chatter("%s: \tSending general query", name().c_str());
 	QueryBuilder qb(0); // 0 --> General Query
 	qb.prepare();
-	for (int i=0; i<noutputs(); i++) output(i).push(qb.packet->clone());
-	qb.packet->kill();
+	for (int i=0; i<noutputs(); i++) output(i).push(qb.new_packet());
 	timer.reschedule_after_sec(query_interval);
 }
 

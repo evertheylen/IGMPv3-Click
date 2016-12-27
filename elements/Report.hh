@@ -42,7 +42,8 @@ struct GroupRecord {
 
 class ReportBuilder {
 public:
-	ReportBuilder(uint16_t number_group_records, int tailroom = -1);
+	ReportBuilder(int tailroom = -1);
+	~ReportBuilder();
 	
 	template <typename Iterable>
 	GroupRecord* add_record(RecordType type, IPAddress multicast_address, Iterable source_list) {
@@ -60,7 +61,11 @@ public:
 	void prepare();
 	
 	inline Report* report() { return (Report*) packet->data(); }
+	inline Packet* new_packet() { return packet->clone(); }
 	
+	uint16_t records = 0;
+	
+protected:
 	WritablePacket* packet;
 };
 

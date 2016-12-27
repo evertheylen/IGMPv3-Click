@@ -4,14 +4,11 @@
 
 #include "MCTable.hh"
 #include "IGMP.hh"
+#include "RouterGroupState.hh"
 
 CLICK_DECLS
-
-// nothing?
 
 CLICK_ENDDECLS
 
 EXPORT_ELEMENT(ClientMCTable)
 EXPORT_ELEMENT(RouterMCTable)
-
-#include "GroupState.cc"

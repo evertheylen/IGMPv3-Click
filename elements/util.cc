@@ -1,5 +1,7 @@
 #include "util.hh"
 
+std::random_device rd;
+
 std::vector<String> split(const String& s, char delim) {
 	std::vector<String> v;
 	String buf;
