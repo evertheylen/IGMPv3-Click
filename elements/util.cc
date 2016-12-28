@@ -18,6 +18,3 @@ std::vector<String> split(const String& s, char delim) {
 	
 	return v;
 }
-
-SourceState::SourceState(bool _include, const std::set<IPAddress>& _s): include(_include), sources(_s) {}
-

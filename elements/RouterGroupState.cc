@@ -105,7 +105,7 @@ void RouterGroupState::Q() { // Group-Specific Query
 	qb.prepare();
 	table->igmp->output(interface).push(qb.new_packet());
 	unsigned int LMQT_ms = table->igmp->LMQT() * 100;
-	if (LMQT_ms < group_timer_ms()) {
+	if (LMQT_ms < left(group_timer)) {
 		group_timer.schedule_after_msec(LMQT_ms);
 	}
 }
@@ -116,7 +116,7 @@ void RouterGroupState::Q(Iterable A) {  // Group-And-Source-Specific Query
 	for (IPAddress a: A) {
 		auto a_it = sources.find(a);
 		if (a_it != sources.end()) {
-			unsigned int left_ms = (a_it->second->timer.expiry_steady() - Timestamp::now_steady()).msecval();
+			unsigned int left_ms = left(a_it->second->timer);
 			if (LMQT_ms < left_ms) {
 				a_it->second->timer.schedule_after_msec(LMQT_ms);
 			}
@@ -125,10 +125,6 @@ void RouterGroupState::Q(Iterable A) {  // Group-And-Source-Specific Query
 	QueryBuilder qb(group, A);
 	qb.prepare();
 	this->table->igmp->output(interface).push(qb.new_packet());
-}
-
-milliseconds RouterGroupState::group_timer_ms() {
-	return (group_timer.expiry_steady() - Timestamp::now_steady()).msecval();
 }
 
 std::string RouterGroupState::description() {
@@ -225,7 +221,7 @@ void RouterGroupState::got_current_state_record(GroupRecord* record) {
 
 void RouterGroupState::got_state_change_record(GroupRecord* record) {
 	unsigned int GMI_ms = 100 * table->igmp->GMI();
-	unsigned int GT_ms = group_timer_ms();
+	unsigned int GT_ms = left(group_timer);
 	
 	// See 6.4.2
 	// ### [Router State]    [Report Rec'd]    [New Router State]

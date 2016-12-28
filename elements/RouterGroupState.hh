@@ -60,12 +60,10 @@ protected:
 	void schedule_source(IPAddress ip, unsigned int milliseconds);
 	
 	// Abbreviations in tables
-	void Q();  // General Query
+	void Q(); // General Query
 	
 	template <typename Iterable>
-	void Q(Iterable A);// Group-Specific Query	
-	
-	milliseconds group_timer_ms();
+	void Q(Iterable A); // Group-Specific Query	
 	
 	static const RouterGroupState DEFAULT;
 };

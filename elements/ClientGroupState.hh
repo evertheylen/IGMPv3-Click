@@ -23,28 +23,41 @@ using _ClientGroupState = GroupState<ClientMCTable>;
 class ClientGroupState: public _ClientGroupState {
 public:
 	std::set<IPAddress> sources;
+	
+	// retransmitting change-state records
 	unsigned int retransmit_mode = 0;
 	std::map<IPAddress, RetransmitState> retransmit_sources;
 	Timer retransmit_timer;
 	
+	// transmitting current-state records
+	std::set<IPAddress> sources_to_report;
+	Timer current_state_timer;
+	
+	
+	// init
 	ClientGroupState(void* _table = nullptr, int _interface = -1, IPAddress _group = 0);
 	ClientGroupState(const ClientGroupState& other);
 	ClientGroupState& operator=(const ClientGroupState&);
 	void init_timers();
 	
+	// changes and reporting changes
 	template <typename Iterable>
 	void change_to(bool _include, Iterable _sources, bool silent=false);
-	
 	template <typename Iterable>
 	void change_sources(bool allow, Iterable _sources, bool silent=false);
 	
+	static void run_retransmit_timer(Timer* t, void* user_data);
+	void retransmit_timer_expired();
+	GroupRecord* add_filter_mode_record(ReportBuilder& rb);
+	
+	// reporting current-state
+	static void run_current_state_timer(Timer* t, void* user_data);
+	void current_state_timer_expired();
+	
+	// basics
 	bool forward(IPAddress source);
 	
 	bool is_default() const;
-	
-	static void run_robustness_timer(Timer* t, void* user_data);
-	void timer_expired();
-	GroupRecord* add_filter_mode_record(ReportBuilder& rb);
 	
 	// debugging
 	std::string description();

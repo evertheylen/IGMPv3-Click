@@ -16,42 +16,6 @@ using MiniFloat = uint8_t; // TODO
 
 extern std::random_device rd;
 
-// TODO sort this out...
-// It seems it is impossible to maintain a sum while running, you have to recalculate
-// it every time (except for some specific cases). The reason for this is being
-// able to switch from EXCLUDE{} to some INCLUDE state. (--> see timers in GroupState!)
-class SourceState {
-public:
-	SourceState(bool _include = true, const std::set<IPAddress>& sources = {});
-	
-	template <typename Iterable>
-	void add(bool _include, const Iterable& _sources) {
-		if (include) {
-			if (_include) {
-				sources.insert(_sources.begin(), _sources.end());
-			} else {
-				include = false;
-				std::set<IPAddress> new_sources;
-				for (IPAddress s: _sources)
-					if (sources.find(s) == sources.end())
-						new_sources.insert(s);
-				
-				sources = new_sources;
-			}
-		} else {
-			if (_include) {
-				sources.erase(_sources.begin(), _sources.end());
-			} else {
-				
-				//the_set.insert(source);
-			}
-		}
-	}
-
-	bool include;
-	std::set<IPAddress> sources;
-};
-
 // http://cpp.sh/6zfcn
 template <typename T>
 class MemoryIterator {
@@ -129,6 +93,28 @@ namespace std {
 
 inline bool operator<(const IPAddress& a, const IPAddress& b) {
 	return ntoh_32((uint32_t) a) < ntoh_32((uint32_t) b);
+}
+
+template <typename T>
+std::set<T> operator&(const std::set<T>& A, const std::set<T>& B) {
+	std::set<T> res;
+	if (A.size() < B.size()) {
+		for (const T& el: A) if (B.find(el) != B.end()) res.insert(el);
+	} else {
+		for (const T& el: B) if (A.find(el) != A.end()) res.insert(el);
+	}
+	return res;
+}
+
+template <typename T>
+std::set<T> operator-(const std::set<T>& A, const std::set<T>& B) {
+	std::set<T> res;
+	for (const T& el: A) if (B.find(el) == B.end()) res.insert(el);
+	return res;
+}
+
+inline milliseconds left(Timer& t) {
+	return (t.expiry_steady() - Timestamp::now_steady()).msecval();
 }
 
 std::vector<String> split(const String& s, char delim);

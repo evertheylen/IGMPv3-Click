@@ -26,7 +26,9 @@ ClientGroupState& ClientGroupState::operator=(const ClientGroupState& other) {
 void ClientGroupState::init_timers() {
 	if (table != nullptr) {
 		retransmit_timer.initialize(table, true);
-		retransmit_timer.assign(ClientGroupState::run_robustness_timer, this);
+		retransmit_timer.assign(ClientGroupState::run_retransmit_timer, this);
+		current_state_timer.initialize(table, true);
+		current_state_timer.assign(ClientGroupState::run_current_state_timer, this);
 	}
 }
 
@@ -37,12 +39,17 @@ bool ClientGroupState::forward(IPAddress source) {
 
 bool ClientGroupState::is_default() const {
 	return (include == DEFAULT.include) and sources.empty()
-		and retransmit_sources.empty() and retransmit_mode == 0;
+		and retransmit_sources.empty() and retransmit_mode == 0
+		and (not current_state_timer.scheduled());
 }
 
 std::string ClientGroupState::description() {
 	return std::string(Include_to_string(include)) + "(" + list_ips(sources) + ") (client version)";
 }
+
+
+// Changes and Retransmitting
+// --------------------------
 
 GroupRecord* ClientGroupState::add_filter_mode_record(ReportBuilder& rb) {
 	GroupRecord* r = rb.add_record(CHANGE_TO_(include), group, sources);
@@ -57,8 +64,7 @@ GroupRecord* ClientGroupState::add_filter_mode_record(ReportBuilder& rb) {
 	return r;
 }
 
-
-void ClientGroupState::timer_expired() {
+void ClientGroupState::retransmit_timer_expired() {
 	ReportBuilder rb;
 	
 	#define print(x) click_chatter("%s: \tSending to router: %s", table->name().c_str(), x->description().c_str())
@@ -95,10 +101,8 @@ void ClientGroupState::timer_expired() {
 	table->groupstate_changed(*this);
 }
 
-
-void ClientGroupState::run_robustness_timer(Timer* t, void* user_data) {
-	ClientGroupState* cgs = (ClientGroupState*) user_data;
-	cgs->timer_expired();
+void ClientGroupState::run_retransmit_timer(Timer* t, void* user_data) {
+	((ClientGroupState*) user_data)->retransmit_timer_expired();
 }
 
 unsigned int ClientGroupState::random_ms() {
@@ -157,5 +161,40 @@ void ClientGroupState::change_sources(bool allow, Iterable _sources, bool silent
 	}
 	table->groupstate_changed(*this);
 }
+
+
+// Reporting Current State
+// -----------------------
+
+void ClientGroupState::run_current_state_timer(Timer* t, void* user_data) {
+	((ClientGroupState*) user_data)->current_state_timer_expired();
+}
+
+void ClientGroupState::current_state_timer_expired() {
+	click_chatter("%s: \tCurrent state timer expired for ClientGroupState = %s\n", 
+				  table->name().c_str(), description().c_str());
+	if (is_default()) {
+		table->groupstate_changed(*this);
+		return;
+	}
+	
+	ReportBuilder rb;
+	if (sources_to_report.empty()) {
+		// p24, point 2
+		rb.add_record(MODE_IS_(include), group, sources);
+	} else {
+		// p24, point 3
+		auto res = include ? sources&sources_to_report : sources_to_report-sources;
+		if (not res.empty()) rb.add_record(MODE_IS_(include), group, res);
+		sources_to_report.clear();
+	}
+	
+	if (rb.records > 0) {
+		rb.prepare();
+		table->igmp->output(0).push(rb.new_packet());
+	}
+}
+
+
 
 const ClientGroupState ClientGroupState::DEFAULT = ClientGroupState();

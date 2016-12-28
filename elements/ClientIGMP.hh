@@ -6,6 +6,7 @@
 #include <memory>
 
 #include <click/element.hh>
+#include <click/timer.hh>
 
 #include "MCTable.hh"
 #include "Query.hh"
@@ -32,6 +33,9 @@ public:
 	
 protected:
 	ClientMCTable* table;
+	Timer general_query_timer;
+	void run_timer(Timer * timer) override;
+	unsigned int random_ms();
 	
 	static int change_mode_handler(const String &s, Element* e, void* silent, ErrorHandler* errh);
 	static int change_sources_handler(const String &s, Element* e, void* silent, ErrorHandler* errh);
