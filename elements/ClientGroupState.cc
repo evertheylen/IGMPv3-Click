@@ -5,17 +5,17 @@
 #include "MCTable.hh"
 #include "IGMP.hh"
 
-ClientGroupState::ClientGroupState(void* _table, int interface, IPAddress group): 
-		_ClientGroupState(_table, interface, group) {
+ClientGroupState::ClientGroupState(MCTable* _table, IPAddress group): 
+		GroupState(_table, group) {
 	init_timers();
 }
 
 ClientGroupState::ClientGroupState(const ClientGroupState& other):
-		_ClientGroupState(other), retransmit_mode(other.retransmit_mode),
+		GroupState(other), retransmit_mode(other.retransmit_mode),
 		retransmit_sources(other.retransmit_sources) {}
 
 ClientGroupState& ClientGroupState::operator=(const ClientGroupState& other) {
-	_ClientGroupState::operator=(other);
+	GroupState::operator=(other);
 	sources = other.sources;
 	retransmit_sources = other.retransmit_sources;
 	retransmit_mode = other.retransmit_mode;
@@ -32,7 +32,7 @@ void ClientGroupState::init_timers() {
 	}
 }
 
-bool ClientGroupState::forward(IPAddress source) {
+bool ClientGroupState::forward(IPAddress source) const {
 	if (sources.find(source) != sources.end()) return include;
 	else return not include;
 }
@@ -44,7 +44,7 @@ bool ClientGroupState::is_default() const {
 }
 
 std::string ClientGroupState::description() {
-	return std::string(Include_to_string(include)) + "(" + list_ips(sources) + ") (client version)";
+	return std::string(Include_to_string(include)) + "(" + list_ips(sources) + ")";
 }
 
 
@@ -92,13 +92,13 @@ void ClientGroupState::retransmit_timer_expired() {
 	if (rb.records > 0) {
 		rb.prepare();
 		Packet* p = rb.new_packet();
-		table->igmp->output(interface).push(p);
+		table->igmp->output(table->igmp->parent).push(p);
 	}
 	
 	if (retransmit_mode > 0 or (not retransmit_sources.empty()))
 		retransmit_timer.reschedule_after_msec(random_ms());
 	
-	table->groupstate_changed(*this);
+	table->local().groupstate_changed(*this);
 }
 
 void ClientGroupState::run_retransmit_timer(Timer* t, void* user_data) {
@@ -137,7 +137,7 @@ void ClientGroupState::change_to(bool _include, Iterable _sources, bool silent) 
 			retransmit_timer.schedule_now();
 		}
 	}
-	table->groupstate_changed(*this);
+	table->local().groupstate_changed(*this);
 }
 
 template <typename Iterable>
@@ -159,7 +159,7 @@ void ClientGroupState::change_sources(bool allow, Iterable _sources, bool silent
 		}
 		retransmit_timer.schedule_now();
 	}
-	table->groupstate_changed(*this);
+	table->local().groupstate_changed(*this);
 }
 
 
@@ -174,7 +174,7 @@ void ClientGroupState::current_state_timer_expired() {
 	click_chatter("%s: \tCurrent state timer expired for ClientGroupState = %s\n", 
 				  table->name().c_str(), description().c_str());
 	if (is_default()) {
-		table->groupstate_changed(*this);
+		table->local().groupstate_changed(*this);
 		return;
 	}
 	
@@ -191,10 +191,8 @@ void ClientGroupState::current_state_timer_expired() {
 	
 	if (rb.records > 0) {
 		rb.prepare();
-		table->igmp->output(0).push(rb.new_packet());
+		table->igmp->output(table->igmp->parent).push(rb.new_packet());
 	}
 }
-
-
 
 const ClientGroupState ClientGroupState::DEFAULT = ClientGroupState();

@@ -10,16 +10,16 @@
 #include "Report.hh"
 #include "Query.hh"
 
-template <typename Table>
+class MCTable;
+
 class GroupState {
 public:
 	bool include = INCLUDE;
 	
-	Table* table;
-	int interface;
+	MCTable* table;
 	IPAddress group;
 	
-	GroupState(void* _table = nullptr, int _interface = -1, IPAddress _group = 0);
+	GroupState(MCTable* _table = nullptr, IPAddress _group = 0);
 	
 	GroupState(const GroupState& other) = default;
 	GroupState& operator=(const GroupState&) = default;

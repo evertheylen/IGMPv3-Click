@@ -31,9 +31,9 @@ void ClientIGMP::got_query(int port, Query* query, Packet* p) {
 		click_chatter("%s: \tgot (General) Query, case 5.2.2 (schedule GQ resp)\n", name().c_str());
 		general_query_timer.schedule_after_msec(delay);
 	} else {
-		ClientMCTable::SubTable st = table->get_subtable(LOCAL);
-		auto it = st.find(query->group_address);
-		if (it == st.end()) return;
+		ClientSubTable& st = table->local();
+		auto it = st.table.find(query->group_address);
+		if (it == st.table.end()) return;
 		ClientGroupState& gs = it->second;
 		
 		if (not gs.current_state_timer.scheduled()) { // 5.2.3
@@ -65,11 +65,11 @@ unsigned int ClientIGMP::random_ms() {
 
 void ClientIGMP::run_timer(Timer* timer) {
 	// p23, below
-	ClientMCTable::SubTable& subtable = table->get_subtable(LOCAL);
-	int size = subtable.size();
+	ClientSubTable& subtable = table->local();
+	int size = subtable.table.size();
 	if (size > 0) {
 		ReportBuilder rb;
-		for (auto& gs_it: subtable) {
+		for (auto& gs_it: subtable.table) {
 			rb.add_record(MODE_IS_(gs_it.second.include), gs_it.first, gs_it.second.sources);
 		}
 		rb.prepare();
@@ -82,12 +82,7 @@ void ClientIGMP::run_timer(Timer* timer) {
 // Configuration and handlers
 // ==========================
 
-int ClientIGMP::configure(Vector<String> &conf, ErrorHandler *errh) {
-	if (Args(conf, this, errh)
-		.read_mp("TABLE", ElementCastArg("ClientMCTable"), table)
-		.consume() < 0)
-		return -1;
-	table->set_igmp(this);
+int ClientIGMP::initialize(ErrorHandler *errh) {
 	general_query_timer.initialize(this, true);
 	general_query_timer.assign(this);
 	return 0;
@@ -119,7 +114,7 @@ void ClientIGMP::change_mode(const String& s, bool silent) {
 		sources[i-2] = IPAddress(parts[i]);
 	}
 	
-	ClientGroupState& gs = table->get_groupstate(LOCAL, group);
+	ClientGroupState& gs = table->local().get(group);
 	gs.change_to(include, sources, silent);
 }
 
@@ -150,7 +145,7 @@ void ClientIGMP::change_sources(const String& s, bool silent) {
 		sources[i-2] = IPAddress(parts[i]);
 	}
 	
-	ClientGroupState& gs = table->get_groupstate(LOCAL, group);
+	ClientGroupState& gs = table->local().get(group);
 	gs.change_sources(allow, sources, silent);
 }
 

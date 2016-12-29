@@ -13,28 +13,23 @@ class MC: public Element {
 public:
 	const char *class_name() const	{ return "_MC"; }
 	const char *processing() const	{ return PUSH; }
-	void push(int, Packet*);
-	virtual BaseMCTable* get_table() = 0;
+	int configure(Vector<String>& conf, ErrorHandler* errh);
+protected:
+	MCTable* table;
 };
 
 class ClientMC: public MC {
 public:
 	const char *class_name() const	{ return "ClientMC"; }
 	const char *port_count() const	{ return "1/1"; }
-	int configure(Vector<String>& conf, ErrorHandler* errh);
-	inline BaseMCTable* get_table() { return table; }
-private:
-	ClientMCTable* table;
+	void push(int, Packet*);
 };
 
 class RouterMC: public MC {
 public:
 	const char *class_name() const	{ return "RouterMC"; }
 	const char *port_count() const	{ return "1/-"; }
-	int configure(Vector<String>& conf, ErrorHandler* errh);
-	inline BaseMCTable* get_table() { return table; }
-private:
-	RouterMCTable* table;
+	void push(int, Packet*);
 };
 
 CLICK_ENDDECLS

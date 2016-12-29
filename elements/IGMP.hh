@@ -8,10 +8,17 @@
 #include "Report.hh"
 #include "constants.hh"
 
+class MCTable;
+
 class IGMP: public Element {
 public:
+	int parent = -1; // Interface where the parent router can be found. Important for Routers as members.
+	MCTable* table = nullptr;
+	
 	const char *class_name() const	{ return "_IGMP"; }
 	const char *processing() const	{ return PUSH; }
+	
+	int configure(Vector<String>& conf, ErrorHandler* e);
 	
 	void push(int, Packet*);
 	virtual void got_report(int port, Report* report, Packet* p);

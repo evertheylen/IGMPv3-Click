@@ -1,9 +1,4 @@
-
-#pragma once
-
 #include "GroupState.hh"
 
-template <typename Table>
-GroupState<Table>::GroupState(void* _table, int _interface, IPAddress _group):
-	table((Table*) _table), interface(_interface), group(_group) {}
-
+GroupState::GroupState(MCTable* _table, IPAddress _group):
+	table(_table), group(_group) {}

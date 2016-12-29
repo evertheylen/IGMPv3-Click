@@ -7,6 +7,7 @@ void IGMP::push(int port, Packet* p) {
 	const MessageType type = (MessageType) *p->data();
 	if (type == MessageType::QUERY) {
 		if (not checksum_ok<Query>(p)) return;
+		parent = port;
 		got_query(port, (Query*) p->data(), p);
 	} else if (type == MessageType::REPORT) {
 		if (not checksum_ok<Report>(p)) return;
@@ -25,4 +26,11 @@ void IGMP::got_report(int port, Report* report, Packet* p) {
 	click_chatter("%s: \tgot unexpected report\n", name().c_str());
 }
 
-
+int IGMP::configure(Vector<String>& conf, ErrorHandler* errh) {
+	if (Args(conf, this, errh)
+		.read_mp("TABLE", ElementCastArg("MCTable"), table)
+		.consume() < 0)
+		return -1;
+	table->set_igmp(this);
+	return 0;
+}

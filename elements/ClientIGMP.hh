@@ -23,8 +23,7 @@ public:
 	const char *class_name() const	{ return "ClientIGMP"; }
 	const char *port_count() const	{ return "1/1"; }
 	void add_handlers();
-	
-	int configure(Vector<String>&, ErrorHandler*);
+	int initialize(ErrorHandler* errh);
 	
 	void got_query(int port, Query* query, Packet* p);
 	
@@ -32,7 +31,6 @@ public:
 	void change_sources(const String& s, bool allow);
 	
 protected:
-	ClientMCTable* table;
 	Timer general_query_timer;
 	void run_timer(Timer * timer) override;
 	unsigned int random_ms();

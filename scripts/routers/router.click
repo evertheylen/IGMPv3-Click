@@ -38,7 +38,7 @@ elementclass Router {
 	// Important Multicast / IGMP elements
 	// ===================================
 	
-	mc_table :: RouterMCTable;
+	mc_table :: MCTable;
 	igmp :: RouterIGMP(mc_table)
 	mc :: RouterMC(mc_table);
 	

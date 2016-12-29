@@ -13,26 +13,19 @@ SourceTimer::SourceTimer(RouterGroupState* _gs, IPAddress _source, unsigned int 
 	}
 }
 
-RouterGroupState::RouterGroupState(void* _table, int _interface, IPAddress _group):
-		_RouterGroupState(_table, _interface, _group) {
+RouterGroupState::RouterGroupState(MCTable* _table, int _interface, IPAddress _group):
+		GroupState(_table, _group), interface(_interface) {
 	init_timers();
 }
 
 RouterGroupState::RouterGroupState(const RouterGroupState& other): 
-		_RouterGroupState(other) {
-	include = other.include;
-	sources = other.sources;
+		GroupState(other), sources(other.sources), interface(other.interface) {
 	init_timers();
 }
 
-RouterGroupState::~RouterGroupState() {
-	for (auto it: sources)
-		delete it.second;
-}
-
-
 RouterGroupState& RouterGroupState::operator=(const RouterGroupState& other) {
-	_RouterGroupState::operator=(other);
+		GroupState::operator=(other);
+	interface = other.interface;
 	sources = other.sources;
 	init_timers();
 	return *this;
@@ -73,7 +66,7 @@ void RouterGroupState::group_timer_expired() {
 		} else ++it;
 	}
 	// will delete the group record if it turns out to be DEFAULT
-	table->groupstate_changed(*this);
+	table->router(interface).groupstate_changed(*this);
 }
 
 void RouterGroupState::run_source_timer(Timer* t, void* user_data) {
@@ -85,15 +78,14 @@ void RouterGroupState::source_timer_expired(SourceTimer* source_timer) {
 	click_chatter("%s: \tSourceTimer expired, for source %s\n", table->igmp->name().c_str(), source_timer->source.unparse().c_str());
 	if (include) {
 		sources.erase(source_timer->source);
-		delete source_timer;
 	}
-	table->groupstate_changed(*this);
 	// if exclude, then do nothing (see page 29, top)
+	table->router(interface).groupstate_changed(*this);
 }
 
 void RouterGroupState::schedule_source(IPAddress ip, unsigned int milliseconds) {
 	if (sources.find(ip) == sources.end()) {
-		sources[ip] = new SourceTimer(this, ip, milliseconds);
+		sources[ip] = std::make_shared<SourceTimer>(this, ip, milliseconds);
 	} else {
 		if (milliseconds == 0) sources[ip]->timer.unschedule();
 		else sources[ip]->timer.schedule_after_msec(milliseconds);
@@ -134,7 +126,7 @@ std::string RouterGroupState::description() {
 		res += list_first_ips(sources);
 	} else {
 		std::vector<IPAddress> A, B;
-		for (auto it: sources) {
+		for (const auto& it: sources) {
 			if (it.second->timer.scheduled()) A.push_back(it.first);
 			else B.push_back(it.first);
 		}
@@ -171,7 +163,6 @@ void RouterGroupState::got_current_state_record(GroupRecord* record) {
 			for (auto it = sources.cbegin(); it != sources.cend(); ) {
 				if (not record->sources().contains(it->first)) { // linear search
 					// A-B. This deletes all that are in A, but not in B
-					delete it->second;
 					it = sources.erase(it);
 				} else ++it;
 			}
@@ -181,7 +172,7 @@ void RouterGroupState::got_current_state_record(GroupRecord* record) {
 				// this now becomes `b in (A*B)`
 				if (sources.find(b) == sources.end()) {
 					// B-A ~~> B-(A*B)  (same)
-					sources[b] = new SourceTimer(this, b); // no timer
+					sources[b] = std::make_shared<SourceTimer>(this, b); // no timer
 				}
 			}
 			// afterwards, we've added (B-A) to the sources, with no timer
@@ -197,7 +188,7 @@ void RouterGroupState::got_current_state_record(GroupRecord* record) {
 			for (IPAddress a: record->sources()) {
 				if (sources.find(a) == sources.end()) {
 					// (A-X-Y) = GMI
-					sources[a] = new SourceTimer(this, a, GMI_ms);
+					sources[a] = std::make_shared<SourceTimer>(this, a, GMI_ms);
 				}
 			}
 			// afterwards, we've added A to the sources with a timer (at least those that weren't 
@@ -207,7 +198,6 @@ void RouterGroupState::got_current_state_record(GroupRecord* record) {
 			for (auto xy_it = sources.cbegin(); xy_it != sources.cend(); ) {
 				if (not record->sources().contains(xy_it->first)) { // linear search
 					// Delete (X+Y) - A
-					delete xy_it->second;
 					xy_it = sources.erase(xy_it);
 				} else ++xy_it;
 			}
@@ -280,7 +270,6 @@ void RouterGroupState::got_state_change_record(GroupRecord* record) {
 			for (IPAddress a: A) {
 				if (A_and_B.find(a) == A_and_B.end()) { // A-B
 					auto a_it = sources.find(a);
-					delete a_it->second;
 					sources.erase(a_it);
 				}
 			}
@@ -309,7 +298,6 @@ void RouterGroupState::got_state_change_record(GroupRecord* record) {
 			for (auto xy_it = sources.cbegin(); xy_it != sources.cend(); ) {
 				if (not record->sources().contains(xy_it->first)) { // linear search
 					// Delete (X+Y) - A
-					delete xy_it->second;
 					xy_it = sources.erase(xy_it);
 				} else ++xy_it;
 			}

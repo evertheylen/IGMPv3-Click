@@ -16,11 +16,7 @@ struct RetransmitState {
 	inline RetransmitState(unsigned int t=0, bool a=true): transmissions(t), allow(a) {}
 };
 
-class ClientMCTable;
-
-using _ClientGroupState = GroupState<ClientMCTable>;
-
-class ClientGroupState: public _ClientGroupState {
+class ClientGroupState: public GroupState {
 public:
 	std::set<IPAddress> sources;
 	
@@ -35,7 +31,7 @@ public:
 	
 	
 	// init
-	ClientGroupState(void* _table = nullptr, int _interface = -1, IPAddress _group = 0);
+	ClientGroupState(MCTable* _table = nullptr, IPAddress _group = 0);
 	ClientGroupState(const ClientGroupState& other);
 	ClientGroupState& operator=(const ClientGroupState&);
 	void init_timers();
@@ -55,7 +51,7 @@ public:
 	void current_state_timer_expired();
 	
 	// basics
-	bool forward(IPAddress source);
+	bool forward(IPAddress source) const;
 	
 	bool is_default() const;
 	

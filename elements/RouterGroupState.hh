@@ -22,20 +22,16 @@ public:
 	SourceTimer(RouterGroupState* _gs, IPAddress _source, unsigned int milliseconds = 0);
 };
 
-class RouterMCTable;
-
-using _RouterGroupState = GroupState<RouterMCTable>;
-
-class RouterGroupState: public _RouterGroupState {
+class RouterGroupState: public GroupState {
 public:
 	Timer group_timer; // only used in EXCLUDE
-	std::map<IPAddress, SourceTimer*> sources;
+	std::map<IPAddress, std::shared_ptr<SourceTimer>> sources;
+	int interface;
 	
-	RouterGroupState(void* _table = nullptr, int _interface = -1, IPAddress _group = 0);
+	RouterGroupState(MCTable* _table = nullptr, int _interface = -1, IPAddress _group = 0);
 	RouterGroupState(const RouterGroupState& other);
 	RouterGroupState& operator=(const RouterGroupState&);
 	void init_timers();
-	~RouterGroupState();
 	
 	bool is_default() const;
 	
@@ -55,6 +51,8 @@ public:
 	// debugging
 	std::string description();
 	
+	static const RouterGroupState DEFAULT;
+	
 protected:
 	// Utitilities for implementing table actions:
 	void schedule_source(IPAddress ip, unsigned int milliseconds);
@@ -64,7 +62,5 @@ protected:
 	
 	template <typename Iterable>
 	void Q(Iterable A); // Group-Specific Query	
-	
-	static const RouterGroupState DEFAULT;
 };
 

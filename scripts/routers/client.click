@@ -23,7 +23,7 @@ elementclass Client {
 	// Multicast stuff
 	// ===============
 		
-	mc_table :: ClientMCTable;
+	mc_table :: MCTable;
 	igmp :: ClientIGMP(mc_table);
 	mc :: ClientMC(mc_table);
 	igmp_class::IPClassifier(
