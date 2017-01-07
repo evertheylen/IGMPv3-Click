@@ -8,21 +8,27 @@
 CLICK_DECLS
 
 int RouterIGMP::initialize(ErrorHandler* errh) {
-	timer.initialize(this, true);
-	timer.assign(this);
-	timer.schedule_now();
+	IGMP::initialize(errh);
+	send_gq_timer.initialize(this, true);
+	send_gq_timer.assign(RouterIGMP::run_send_gq_timer, this);
+	send_gq_timer.schedule_now();
 	return 0;
 }
 
-void RouterIGMP::run_timer(Timer*) {
-	click_chatter("%s: \tSending general query", name().c_str());
+void RouterIGMP::run_send_gq_timer(Timer*, void* user_data) {
+	RouterIGMP* r = (RouterIGMP*) user_data;
+	click_chatter("%s: \tSending general query", r->name().c_str());
 	QueryBuilder qb(0); // 0 --> General Query
+	qb.query()->QRV = r->robustness;
 	qb.prepare();
-	for (int i=0; i<noutputs(); i++) output(i).push(qb.new_packet());
-	timer.reschedule_after_sec(query_interval);
+	for (int i=0; i<r->noutputs(); i++) {
+		if (i != r->parent) r->output(i).push(qb.new_packet());
+	}
+	r->send_gq_timer.reschedule_after_sec(r->query_interval);
 }
 
 void RouterIGMP::got_report(int port, Report* report, Packet* p) {
+	if (port == parent) return;
 	uint16_t N = ntoh_16(report->number_group_records);
 
 	GroupRecord* record = (GroupRecord*) (p->data() + sizeof(Report));
@@ -36,10 +42,7 @@ void RouterIGMP::got_report(int port, Report* report, Packet* p) {
 			gs.got_state_change_record(record);
 		}
 		click_chatter("%s: \tRouterIGMP port %d: new GroupState:     %s", name().c_str(), port, gs.description().c_str());
-		
-		if (gs.is_default()) {
-			table->router(port).table.erase(record->multicast_address);
-		}
+		table->router(port).groupstate_changed(gs);
 		
 		record = pointer_add(record, record->size());
 	}

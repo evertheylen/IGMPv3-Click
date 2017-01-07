@@ -27,8 +27,6 @@ enum class RecordType: uint8_t {
 const bool INCLUDE = true;
 const bool EXCLUDE = false;
 
-const int LOCAL = 0;
-
 inline bool is_state_change(const RecordType& r) {
 	return r == RecordType::CHANGE_TO_INCLUDE_MODE or r == RecordType::CHANGE_TO_EXCLUDE_MODE
 			or r == RecordType::ALLOW_NEW_SOURCES or r == RecordType::BLOCK_OLD_SOURCES;

@@ -65,6 +65,8 @@ public:
 	inline RouterGroupState new_group_state(IPAddress group) {
 		return RouterGroupState(parent_table, interface, group);
 	}
+	
+	void groupstate_changed(RouterGroupState& gs);
 };
 
 
@@ -109,7 +111,7 @@ public:
 	
 	IGMP* igmp;
 	
-protected:
+// protected:
 	std::map<int, RouterSubTable> router_tables; // could be empty
 	ClientSubTable local_table;
 	
@@ -122,7 +124,7 @@ protected:
 		String s;
 		if (not local_table.empty()) {
 			s += String("--- Local/Total Interface ---\n");
-			for (auto it: local_table.table) {
+			for (auto& it: local_table.table) {
 				s += IPAddress(it.first).unparse() + "\t" + String(it.second.description().c_str()) + "\n";
 			}
 			s += "\n";
@@ -130,7 +132,7 @@ protected:
 		
 		for (auto iit: router_tables) {
 			s += String("--- Interface ") + String(iit.first) + " ---\n";
-			for (auto it: iit.second.table) {
+			for (auto& it: iit.second.table) {
 				s += IPAddress(it.first).unparse() + "\t" + String(it.second.description().c_str()) + "\n";
 			}
 			s += "\n";

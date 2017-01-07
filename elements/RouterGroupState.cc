@@ -94,6 +94,7 @@ void RouterGroupState::schedule_source(IPAddress ip, unsigned int milliseconds) 
 
 void RouterGroupState::Q() { // Group-Specific Query
 	QueryBuilder qb(group, 0);
+	qb.query()->QRV = table->igmp->get_robustness();
 	qb.prepare();
 	table->igmp->output(interface).push(qb.new_packet());
 	unsigned int LMQT_ms = table->igmp->LMQT() * 100;
@@ -115,6 +116,7 @@ void RouterGroupState::Q(Iterable A) {  // Group-And-Source-Specific Query
 		}
 	}
 	QueryBuilder qb(group, A);
+	qb.query()->QRV = table->igmp->get_robustness();
 	qb.prepare();
 	this->table->igmp->output(interface).push(qb.new_packet());
 }
@@ -177,8 +179,6 @@ void RouterGroupState::got_current_state_record(GroupRecord* record) {
 			}
 			// afterwards, we've added (B-A) to the sources, with no timer
 		} else {
-			// TODO (understanding): where does X go?
-			
 			// ### EXCLUDE (X, Y)    IS_EX (A)    EXCLUDE (A-Y, Y*A)
 			// (A-X-Y) = GMI
 			// Delete (X-A)
@@ -201,8 +201,6 @@ void RouterGroupState::got_current_state_record(GroupRecord* record) {
 					xy_it = sources.erase(xy_it);
 				} else ++xy_it;
 			}
-			
-			// TODO check code, perhaps merge a bit with code above?
 		}
 		// Both cases need their group_timer set to GMI
 		group_timer.schedule_after_msec(GMI_ms);

@@ -17,7 +17,6 @@ int MC::configure(Vector<String>& conf, ErrorHandler* errh) {
 }
 
 void ClientMC::push(int, Packet* p) {
-	click_chatter("CLIEEEEEEEEEEEEEENT\n");
 	auto it = table->local().table.find(p->dst_ip_anno());
 	if (it == table->local().table.end()) {
 		p->kill();
@@ -29,7 +28,6 @@ void ClientMC::push(int, Packet* p) {
 				  it->second.description().c_str(), forward ? "Go along..." : "DENIED");
 	if (forward) output(0).push(p);
 	else p->kill();
-	click_chatter("CLIIIIIIIIIIIIIIIIIIEEENT DONE\n");
 }
 
 void RouterMC::push(int, Packet* p) {

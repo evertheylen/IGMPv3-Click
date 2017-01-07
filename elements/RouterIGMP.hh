@@ -14,14 +14,13 @@ public:
 	const char *port_count() const	{ return "-/="; }
 	
 	void got_report(int port, Report* report, Packet* p);
-	// TODO implement get_query
 	
 	int initialize(ErrorHandler * errh);
 
-	void run_timer(Timer*);
+	static void run_send_gq_timer(Timer*, void* user_data);
 
 private:
-	Timer timer;
+	Timer send_gq_timer;
 };
 
 CLICK_ENDDECLS

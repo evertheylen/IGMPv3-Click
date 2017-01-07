@@ -10,15 +10,16 @@
 #include "util.hh"
 
 struct Query {
-	Query(): reserved(0), S(false), QRV(defaults::ROBUSTNESS) {}
+	Query(): QRV(defaults::ROBUSTNESS), S(0), reserved(0) {}
 	
 	MessageType type = MessageType::QUERY;
 	MiniFloat max_resp_code = defaults::MAX_RESP_CODE;
 	uint16_t checksum = 0;
 	IPAddress group_address;
-	uint8_t reserved : 4;
-	bool S : 1;
-	uint8_t QRV : 3;
+	unsigned int QRV : 3;
+	unsigned int S : 1;
+	unsigned int reserved : 4;
+// 	uint8_t QRV__S__res = 0xc0; // 110 0 0000 = c0
 	MiniFloat QQIC = defaults::QUERY_INTERVAL_CODE;
 	uint16_t N = 0;
 	// source addresses go here
@@ -26,7 +27,7 @@ struct Query {
 	inline unsigned int size() { return sizeof(Query) + sizeof(IPAddress) * N; }
 	
 	inline MemoryIterator<IPAddress> sources() {
-		return MemoryIterator<IPAddress>((IPAddress*) pointer_add(this, sizeof(Query)), N);
+		return MemoryIterator<IPAddress>((IPAddress*) pointer_add(this, sizeof(Query)), ntoh_16(N));
 	}
 };
 

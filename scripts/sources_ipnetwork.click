@@ -1,4 +1,3 @@
-
 // Advanced (and thus edited) version of ipnetwork.click
 // Defines multiple sources
 

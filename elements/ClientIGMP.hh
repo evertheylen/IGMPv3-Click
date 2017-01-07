@@ -23,17 +23,11 @@ public:
 	const char *class_name() const	{ return "ClientIGMP"; }
 	const char *port_count() const	{ return "1/1"; }
 	void add_handlers();
-	int initialize(ErrorHandler* errh);
-	
-	void got_query(int port, Query* query, Packet* p);
 	
 	void change_mode(const String& s, bool silent);
 	void change_sources(const String& s, bool allow);
 	
 protected:
-	Timer general_query_timer;
-	void run_timer(Timer * timer) override;
-	unsigned int random_ms();
 	
 	static int change_mode_handler(const String &s, Element* e, void* silent, ErrorHandler* errh);
 	static int change_sources_handler(const String &s, Element* e, void* silent, ErrorHandler* errh);

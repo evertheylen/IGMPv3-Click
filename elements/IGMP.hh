@@ -19,6 +19,7 @@ public:
 	const char *processing() const	{ return PUSH; }
 	
 	int configure(Vector<String>& conf, ErrorHandler* e);
+	int initialize(ErrorHandler* errh);
 	
 	void push(int, Packet*);
 	virtual void got_report(int port, Report* report, Packet* p);
@@ -30,6 +31,10 @@ public:
 	inline uint8_t get_robustness() { return robustness; }
 	
 protected:
+	Timer respond_to_gq_timer;
+	static void run_respond_to_gq_timer(Timer* timer, void* user_data);
+	unsigned int random_ms();
+	
 	uint8_t robustness = defaults::ROBUSTNESS;
 	seconds query_interval = defaults::QUERY_INTERVAL;
 	centiseconds max_resp_time = defaults::MAX_RESP_TIME;
